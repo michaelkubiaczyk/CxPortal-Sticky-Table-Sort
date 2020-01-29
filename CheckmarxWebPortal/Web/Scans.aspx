@@ -347,6 +347,8 @@ function filterScanScopeSelectedIndexChanged(sender, args) {
                         ResizeGridOnColumnResize="False"></Resizing>
                     <Selecting AllowRowSelect="true" />
                     <ClientEvents OnRowSelected="ScanRowSelected"></ClientEvents>
+                    <ClientEvents OnMasterTableViewCreated="MTVCreated" />                    
+                    <ClientEvents OnCommand="GridCommand" />
                 </ClientSettings>
                 <GroupingSettings ShowUnGroupButton="true" />
                 <PagerStyle AlwaysVisible="True" Mode="NextPrevAndNumeric" />
@@ -779,6 +781,7 @@ function filterScanScopeSelectedIndexChanged(sender, args) {
             </asp:Panel>
         </div>
     </div>
+    <script src="TableSort.js" type='text/javascript' language='javascript'></script>
 </asp:Content>
 <asp:Content ID="cnt3" ContentPlaceHolderID="script" runat="Server">
 </asp:Content>

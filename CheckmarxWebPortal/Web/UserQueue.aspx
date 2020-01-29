@@ -229,6 +229,8 @@
                         ResizeGridOnColumnResize="False"></Resizing>
                     <Selecting AllowRowSelect="true" />
                     <ClientEvents OnRowSelected="ScanRowSelected"></ClientEvents>
+                    <ClientEvents OnMasterTableViewCreated="MTVCreated" />                    
+                    <ClientEvents OnCommand="GridCommand" />
                 </ClientSettings>
                  <ExportSettings Pdf-PaperSize="A4" Pdf-PageTitle="Queue" Pdf-PageHeight="210mm" Pdf-PageWidth="297mm" FileName="Queue">
                 </ExportSettings>
@@ -295,6 +297,7 @@
             </asp:Panel>
         </div>
     </div>
+    <script src="TableSort.js" type='text/javascript' language='javascript'></script>
 </asp:Content>
 <asp:Content ID="Content3" ContentPlaceHolderID="script" runat="Server">
     <script type="text/jscript" language="javascript">

@@ -625,6 +625,8 @@
                         ResizeGridOnColumnResize="False"></Resizing>
                     <Selecting AllowRowSelect="true" />
                     <ClientEvents OnRowSelected="RowSelected"></ClientEvents>
+                    <ClientEvents OnMasterTableViewCreated="MTVCreated" />                    
+                    <ClientEvents OnCommand="GridCommand" />
                 </ClientSettings>
                 <PagerStyle AlwaysVisible="True" Mode="Slider" />
                 <GroupingSettings ShowUnGroupButton="true" />
@@ -894,6 +896,7 @@
             </asp:Panel>
         </div>
     </div>
+    <script src="TableSort.js" type='text/javascript' language='javascript'></script>
 </asp:Content>
 <asp:Content ID="Content3" ContentPlaceHolderID="script" runat="Server">
 </asp:Content>
