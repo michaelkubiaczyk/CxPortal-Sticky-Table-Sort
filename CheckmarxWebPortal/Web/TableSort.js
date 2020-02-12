@@ -6,7 +6,7 @@ var tableFilter = "";
 var loadedSort = 0;
 
 function MTVCreated( grid, args ) {
-	var urlParams = new URLSearchParams( window.location.hash.substring(1) );	
+	var urlParams = getParams();	
 	var MTV = grid.get_masterTableView();
 
 	if ( urlParams.has( "showPage" ) ) showPage = parseInt( urlParams.get("showPage") );
@@ -31,6 +31,22 @@ function MTVCreated( grid, args ) {
 	} else if ( showPage != MTV.get_currentPageIndex()+1 ) {
 		if ( showPage > MTV.get_pageCount() ) showPage = MTV.get_pageCount();
 		MTV.set_currentPageIndex( showPage );
+	}
+}
+
+function getParams() {
+	if (window.location.hash) {
+		return new URLSearchParams( window.location.hash.substring(1) );
+	}
+	if (typeof(Storage) !== "undefined" && document.referrer.match("authCallback")) {
+		return new URLSearchParams( localStorage.getItem( "fs_params" ) );
+	}
+	return new URLSearchParams("");
+}
+function setParams( params ) {
+	window.location.hash = "#" + params;
+	if (typeof(Storage) !== "undefined") {
+		localStorage.setItem( "fs_params", params );
 	}
 }
 
@@ -68,9 +84,9 @@ function GridCommand( grid, args ) {
 }
 
 function updateHash() {
-	var urlParams = new URLSearchParams( window.location.hash.substring(1) );	
+	var urlParams = getParams();
 	
-	var hash = "#";
+	var hash = ""; 
 	if ( sortField != "" ) {
 		hash += "&sort=" + sortField;
 	} else if ( urlParams.has("sort") ) {
@@ -101,7 +117,7 @@ function updateHash() {
 		hash += "&filter=" + urlParams.get("filter");
 	}
 
-	window.location.hash = hash;
+	setParams(hash);
 }
 
 function showProps( obj ) {
