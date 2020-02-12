@@ -134,3 +134,11 @@ function showPropsS( obj, search ) {
 	}
 	return str;
 }
+
+function onPageLoad() {
+	if (window.location.hash && typeof(Storage) !== "undefined" && localStorage.getItem( "fs_param" ) != window.location.hash.substring(1) ) {
+		localStorage.setItem( "fs_params", window.location.hash.substring(1) );
+	}
+}
+
+onPageLoad();
