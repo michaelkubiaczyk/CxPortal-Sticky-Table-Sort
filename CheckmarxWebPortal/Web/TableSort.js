@@ -21,9 +21,9 @@ function MTVCreated( grid, args ) {
 		var sort = urlParams.get("sort").replace( "/[^a-zA-Z]", "");
 		var order = "none";
 		if ( urlParams.has("order") ) { order = urlParams.get("order").replace("/[^a-zA-Z]/", "" ); }
-		alert( "Sort " + sort + " " + order );
+
 		grid.get_masterTableView()._sortExpressions.clear();
-		//grid.get_masterTableView().sort( sort + " " + order );
+
 		setTimeout( function(){ grid.get_masterTableView().sort( sort + " " + order ); }, 500 );
 		loadedSort = 1;
 	} else if ( pageSize != 0 && pageSize != MTV.get_pageSize() ) {
@@ -44,7 +44,6 @@ function getParams() {
 	return new URLSearchParams("");
 }
 function setParams( params ) {
-	alert('setting param ' + params );
 	window.location.hash = "#" + params;
 	if (typeof(Storage) !== "undefined") {
 		localStorage.setItem( "fs_params", params );
@@ -52,13 +51,10 @@ function setParams( params ) {
 }
 
 function GridCommand( grid, args ) {
-
 	if ( args.get_commandName() == "Sort" ) {
 		var sort = args.get_commandArgument();
 		var res = sort.split(" ");
-
-		alert ( "Command " + args.get_commandName() + ", " + args.get_commandArgument() + ".\nCurrent: " + sortField + " " + sortOrder );
-		
+	
 		if ( sortField == res[0] ) {
 			if ( sortOrder == "ASC" ) {
 				sortOrder = "DESC";
@@ -147,4 +143,4 @@ function onPageLoad() {
 	}
 }
 
-//onPageLoad();
+onPageLoad();
