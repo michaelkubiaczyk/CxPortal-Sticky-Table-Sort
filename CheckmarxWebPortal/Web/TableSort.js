@@ -1,5 +1,5 @@
 var sortField = "";
-var sortOrder = "";
+var sortOrder = 0;
 var showPage = 0;
 var pageSize = 0;
 var tableFilter = "";
@@ -19,16 +19,16 @@ function MTVCreated( grid, args ) {
 
 	} else if ( sortField == "" && urlParams.has( "sort" ) && loadedSort == 0 ) {
 		var sort = urlParams.get("sort").replace( "/[^a-zA-Z]", "");
-		var order = "ASC";
+		var order = "none";
 		if ( urlParams.has("order") ) { order = urlParams.get("order").replace("/[^a-zA-Z]/", "" ); }
-	
+		alert( "Sort " + sort + " " + order );
 		grid.get_masterTableView()._sortExpressions.clear();
-
-		grid.get_masterTableView().sort( sort + " " + order );
+		//grid.get_masterTableView().sort( sort + " " + order );
+		setTimeout( function(){ grid.get_masterTableView().sort( sort + " " + order ); }, 500 );
 		loadedSort = 1;
 	} else if ( pageSize != 0 && pageSize != MTV.get_pageSize() ) {
 		MTV.set_pageSize( pageSize );
-	} else if ( showPage != MTV.get_currentPageIndex()+1 ) {
+	} else if ( showPage > 0 && showPage != MTV.get_currentPageIndex()+1 ) {
 		if ( showPage > MTV.get_pageCount() ) showPage = MTV.get_pageCount();
 		MTV.set_currentPageIndex( showPage );
 	}
@@ -44,6 +44,7 @@ function getParams() {
 	return new URLSearchParams("");
 }
 function setParams( params ) {
+	alert('setting param ' + params );
 	window.location.hash = "#" + params;
 	if (typeof(Storage) !== "undefined") {
 		localStorage.setItem( "fs_params", params );
@@ -51,10 +52,13 @@ function setParams( params ) {
 }
 
 function GridCommand( grid, args ) {
+
 	if ( args.get_commandName() == "Sort" ) {
 		var sort = args.get_commandArgument();
 		var res = sort.split(" ");
 
+		alert ( "Command " + args.get_commandName() + ", " + args.get_commandArgument() + ".\nCurrent: " + sortField + " " + sortOrder );
+		
 		if ( sortField == res[0] ) {
 			if ( sortOrder == "ASC" ) {
 				sortOrder = "DESC";
@@ -87,16 +91,18 @@ function updateHash() {
 	var urlParams = getParams();
 	
 	var hash = ""; 
-	if ( sortField != "" ) {
-		hash += "&sort=" + sortField;
-	} else if ( urlParams.has("sort") ) {
-		hash += "&sort=" + urlParams.get("sort");
-	}
+	if ( sortOrder != "" ) { //clear sort
+		if ( sortField != "" ) {
+			hash += "&sort=" + sortField;
+		} else if ( urlParams.has("sort") ) {
+			hash += "&sort=" + urlParams.get("sort");
+		}
 
-	if ( sortOrder != 0 ) {
-		hash += "&order=" + sortOrder;
-	} else if ( urlParams.has("order") ) {
-		hash += "&order=" + urlParams.get("order");
+		if ( sortOrder != 0 ) {
+			hash += "&order=" + sortOrder;
+		} else if ( urlParams.has("order") ) {
+			hash += "&order=" + urlParams.get("order");
+		}
 	}
 
 	if ( pageSize != 0 ) {
@@ -141,4 +147,4 @@ function onPageLoad() {
 	}
 }
 
-onPageLoad();
+//onPageLoad();
