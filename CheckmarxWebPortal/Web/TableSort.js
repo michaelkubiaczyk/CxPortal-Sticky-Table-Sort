@@ -36,10 +36,10 @@ function MTVCreated( grid, args ) {
 
 function getParams() {
 	if (window.location.hash) {
-		return new URLSearchParams( window.location.hash.substring(1) );
+		return new URLSearchParams( sanitize(window.location.hash.substring(1)) );
 	}
 	if (typeof(Storage) !== "undefined" && document.referrer.match("authCallback")) {
-		return new URLSearchParams( localStorage.getItem( "fs_params" ) );
+		return new URLSearchParams( sanitize(localStorage.getItem( "fs_params" )) );
 	}
 	return new URLSearchParams("");
 }
@@ -122,6 +122,7 @@ function updateHash() {
 	setParams(hash);
 }
 
+/* // helper for debugging
 function showProps( obj ) {
 	var str = "";
 	for ( var k in obj ) {
@@ -135,6 +136,12 @@ function showPropsS( obj, search ) {
 		if ( k.toString().indexOf( search ) >= 0 ) str += k + "; ";
 	}
 	return str;
+}
+
+*/
+
+function sanitize( str ) {
+	return str.replace(/[^a-zA-Z0-9\-_?|]/g, "");
 }
 
 function onPageLoad() {
