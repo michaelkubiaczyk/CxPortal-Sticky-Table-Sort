@@ -4,9 +4,11 @@ var showPage = 0;
 var pageSize = 0;
 var tableFilter = "";
 var loadedSort = 0;
+var originalHash = "";
 
 function MTVCreated( grid, args ) {
 	var urlParams = getParams();	
+	//alert( "Created: " + urlParams );
 	var MTV = grid.get_masterTableView();
 
 	if ( urlParams.has( "showPage" ) ) showPage = parseInt( urlParams.get("showPage") );
@@ -84,39 +86,38 @@ function GridCommand( grid, args ) {
 }
 
 function updateHash() {
-	var urlParams = getParams();
+	var originalParams = new URLSearchParams( sanitize( originalHash ) );
 	
 	var hash = ""; 
-	if ( sortOrder != "" ) { //clear sort
-		if ( sortField != "" ) {
-			hash += "&sort=" + sortField;
-		} else if ( urlParams.has("sort") ) {
-			hash += "&sort=" + urlParams.get("sort");
-		}
-
-		if ( sortOrder != 0 ) {
-			hash += "&order=" + sortOrder;
-		} else if ( urlParams.has("order") ) {
-			hash += "&order=" + urlParams.get("order");
-		}
+	if ( sortField != "" ) {
+		hash += "&sort=" + sortField;
+	} else if ( originalParams.has("sort") ) {
+		hash += "&sort=" + originalParams.get("sort");
 	}
+
+	if ( sortOrder != 0 ) {
+		hash += "&order=" + sortOrder;
+	} else if ( originalParams.has("order") ) {
+		hash += "&order=" + originalParams.get("order");
+	}
+
 
 	if ( pageSize != 0 ) {
 		hash += "&pageSize=" + pageSize;
-	} else if ( urlParams.has("pageSize") ) {
-		hash += "&pageSize=" + urlParams.get("pageSize");
+	} else if ( originalParams.has("pageSize") ) {
+		hash += "&pageSize=" + originalParams.get("pageSize");
 	}
 
 	if ( showPage != 0 ) {
 		hash += "&showPage=" + showPage;
-	} else if ( urlParams.has("showPage") ) {
-		hash += "&showPage=" + urlParams.get("showPage");
+	} else if ( originalParams.has("showPage") ) {
+		hash += "&showPage=" + originalParams.get("showPage");
 	}
 
 	if ( tableFilter != 0 ) {
 		hash += "&filter=" + tableFilter;
-	} else if ( urlParams.has("filter") ) {
-		hash += "&filter=" + urlParams.get("filter");
+	} else if ( originalParams.has("filter") ) {
+		hash += "&filter=" + originalParams.get("filter");
 	}
 
 	setParams(hash);
@@ -141,12 +142,13 @@ function showPropsS( obj, search ) {
 */
 
 function sanitize( str ) {
-	return str.replace(/[^a-zA-Z0-9\-_?|]/g, "");
+	return str.replace(/[^a-zA-Z0-9\-_?&|=]/g, "");
 }
 
 function onPageLoad() {
 	if (window.location.hash && typeof(Storage) !== "undefined" && localStorage.getItem( "fs_param" ) != window.location.hash.substring(1) ) {
 		localStorage.setItem( "fs_params", window.location.hash.substring(1) );
+		originalHash = window.location.hash;
 	}
 }
 
