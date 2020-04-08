@@ -38,7 +38,7 @@ function MTVCreated( grid, args ) {
 
 function getParams() {
 	if (window.location.hash) {
-		return new URLSearchParams( sanitize(window.location.hash.substring(1)) );
+		return new URLSearchParams( sanitize( decodeURI( window.location.hash.substring(1)) ) );
 	}
 	if (typeof(Storage) !== "undefined" && document.referrer.match("authCallback")) {
 		return new URLSearchParams( sanitize(localStorage.getItem( "fs_params" )) );
@@ -147,7 +147,7 @@ function sanitize( str ) {
 
 function onPageLoad() {
 	if (window.location.hash && typeof(Storage) !== "undefined" && localStorage.getItem( "fs_param" ) != window.location.hash.substring(1) ) {
-		localStorage.setItem( "fs_params", window.location.hash.substring(1) );
+		localStorage.setItem( "fs_params", decodeURI( window.location.hash.substring(1) ) );
 		originalHash = window.location.hash;
 	}
 }
