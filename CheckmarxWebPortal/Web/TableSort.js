@@ -68,8 +68,16 @@ function updateTable( param, value ) {
 	//alert( "Need to set param " + param + " to " + value );
 	switch (param) {
 		case "filter":
-			var parameters = value.split( "|?" );
-			setTimeout( function(){ MTV.showFilterItem(); MTV.filter( parameters[0], parameters[1], parameters[2]); }, 500 );
+			//alert("Updating Filters:\nFrom: " + getFilterString( currentFilters ) + "\nTo: " + getFilterString( targetFilters ) );
+			for ( var [key, filter] of targetFilters ) {
+				//alert( "Want to set filter " + key + " to " + filter + "\nCurrently: " + currentFilters.get( key ) );
+				
+				if ( !currentFilters.has( key ) || currentFilters.get(key) !== filter ) {					
+					var parameters = filter.split( "|?" );
+					setTimeout( function(){ MTV.showFilterItem(); MTV.filter( parameters[0], parameters[1], parameters[2]); }, 500 );
+					break;
+				}
+			}
 			break;
 		case "sort":
 			var sort = value.replace( "/[^a-zA-Z]", "");
@@ -143,15 +151,31 @@ function GridCommand( grid, args ) {
 	} else if ( args.get_commandName() == "Page" ) {
 		currentState.set( "showPage", args.get_commandArgument() );
 	} else if ( args.get_commandName() == "Filter" ) {
-		var filter = args.get_commandArgument();
-		if ( filter.match( /\|\?\|\?/ ) ) 
-			currentState.delete( "filter" );
-		else
-			currentState.set( "filter", args.get_commandArgument() );
+		var filter = args.get_commandArgument().split( "|?", 3 );
+		//alert( "Filtering: " + filter[0] + ", " + filter[1] + ", " + filter[2] );
+		if ( filter[1] == "" ) { // want to unfilter this column
+			//currentState.delete( "filter" );
+			currentFilters.delete( filter[0] );
+		} else {
+			//currentState.set( "filter", args.get_commandArgument() );
+			currentFilters.set( filter[0], args.get_commandArgument() );			
+			currentState.set( "filter", getFilterString( currentFilters ) );
+		}
 	}
 
 	window.location.hash = "#" + currentState.toString();
 	if ( targetReached == 1 ) targetState = currentState;
+}
+
+function getFilterString( filterMap ) {
+	var filterString = "";
+	filterMap.forEach( function(value){
+		if ( filterString == "" ) 
+			filterString = value;
+		else
+			filterString += "||" + value;
+	});
+	return filterString;
 }
 
 function showProps( obj ) {
@@ -193,10 +217,21 @@ function onPageLoad() {
 		targetHash = sanitize(dec);
 		//alert( "Window hash: " + window.location.hash.substring(1) + "\ndecoded: " + dec + "\nsanitied: " + targetHash	) 
 		targetState = new URLSearchParams( targetHash );
+		
+		
+		//alert( "Target filters from " + targetState.get("filter") + "\n" + getFilterString( targetFilters ) );		
+		
 		sessionStorage.setItem( storedParamName, targetHash );
 		targetReached = 0;
 	}
-
+	
+	if ( targetState.has( "filter" ) ) {
+		var filters = targetState.get( "filter" ).split( "||" );
+		filters.forEach( function(value) {
+			var filter = value.split( "|?", 3 );
+			targetFilters.set( filter[0], value );
+		});
+	}
 }
 
 onPageLoad();
