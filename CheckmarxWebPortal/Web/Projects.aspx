@@ -3,13 +3,19 @@
 <%@ Register Src="SourceFilterPatternControl.ascx" TagName="SourceFilterPatternControl" TagPrefix="CX" %>
 
 <asp:Content ID="cnt1" ContentPlaceHolderID="head" runat="Server">
+	<script src="TableSort.js" type='text/javascript' language='javascript'></script>
     <%= System.Web.Optimization.Scripts.Render("~/portal/Scripts/portal") %>
     <%= System.Web.Optimization.Scripts.Render("~/portal/Scripts/projects") %>
     <%= System.Web.Optimization.Scripts.Render("~/portal/Scripts/projectPolicies") %>
     <%= System.Web.Optimization.Scripts.Render("~/portal/Scripts/OsaSettings") %>
+    <%= System.Web.Optimization.Scripts.Render("~/portal/Scripts/projectPublisher") %>
     
-
     <style type="text/css">
+
+        .isProjectPoliciesMngInstalled{
+            display:none;
+        }
+
         fieldset {
             border: 1px solid #003366;
         }
@@ -98,61 +104,151 @@
             padding-top:25px;
             border-top:1px solid lightgray;
         }
+
+        .policyStaticSync{
+            background: url(Images/Icons/staticSync.png) 
+            left 9px top 3px no-repeat;
+            background-size: 15px 15px;
+            height:25px;
+            background-color: #e7e7e7;
+            padding-left: 32px;
+            padding-right:24px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .policyStaticSync:hover {
+            background-color: #C8C8C8;
+        }
+
+        .policyDynamicSync{
+            background: url(Images/Icons/dynamicSync.gif) 
+            left 7px top 2px no-repeat;
+            background-size: 17px 17px;
+            min-width: 86px;
+            height:25px;
+            background-color: #e7e7e7;
+            padding-left: 29px;
+            border-radius: 4px;
+            outline:0 !important;
+        }
+
+        .policySyncPanelWithScan{
+            height:200px;
+            width:320px;
+        }
+
+        .policySyncPanelWithNoScan{
+            height:165px;
+        }
          
     </style>
+    <script src="app/libs/SignalR/jquery.signalR-2.3.0.js" type="text/javascript"></script>
     <script language="javascript" type="text/javascript">
         var emailsType = null;
         var EmailsMaxLength = <%=CxPortalSettings.Default.EmailsMaxLength%>;
         var EmailMaxCount = <%=CxPortalSettings.Default.EmailMaxCount%>;
         var SingleMailMaxLength = <%=CxPortalSettings.Default.SingleMailMaxLength%>;
         var EmailsMaxLengthError = '<%=CxPortalSettings.Default.SingleMailMaxLength%>';
-        var EmailMaxCountError = '<%=GetTermFromResourceJSEncoded("EMAILMAXCOUNTERROR") %>';
-        var SingleMailMaxLengthError = '<%=GetTermFromResourceJSEncoded("SINGLEMAILMAXLENGTHERROR") %>';
-        var InvalidEmailError = '<%=GetTermFromResourceJSEncoded("INVALIDEMAIL") %>';
-        var ConfirmMessage = '<%=GetTermFromResourceJSEncoded("CONFIRMCANCELPROJECTWIZARD") %>';
-        var ConfirmChangingSourceToLocal = '<%=GetTermFromResourceJSEncoded("CONFIRM_CHANGE_SOURCE_LOCATION_TO_LOCAL") %>';
-        var ConfirmChangingSourceFromLocal = '<%=GetTermFromResourceJSEncoded("CONFIRM_CHANGE_SOURCE_LOCATION_FROM_LOCAL") %>';
-        var ConfirmChangingSourceLocationOSA = '<%=GetTermFromResourceJSEncoded("CONFIRM_CHANGE_SOURCE_LOCATION_OSA") %>';
-        var DELETE_PROJECTS_SUCCESSFULLY = '<%=this.GetTermFromResourceJSEncoded("DELETE_PROJECTS_SUCCESSFULLY")%>';       
-        var DELETE_PROJECTS_PARTLY_SUCCESSFUL = '<%=this.GetTermFromResourceJSEncoded("DELETE_PROJECTS_PARTLY_SUCCESSFUL")%>';
-        var DELETE_SCANS_DOWNLOAD_FILE = '<%=this.GetTermFromResourceJSEncoded("DELETE_SCANS_DOWNLOAD_FILE")%>';
-        var DELETE_SCANS_DOWNLOAD_TEXT = '<%=this.GetTermFromResourceJSEncoded("DELETE_SCANS_DOWNLOAD_TEXT")%>';
-        var OK = '<%=this.GetTermFromResourceJSEncoded("OK")%>';
+        var EmailMaxCountError = '<%=GetTermFromResourceJsEncoded("EMAILMAXCOUNTERROR") %>';
+        var SingleMailMaxLengthError = '<%=GetTermFromResourceJsEncoded("SINGLEMAILMAXLENGTHERROR") %>';
+        var InvalidEmailError = '<%=GetTermFromResourceJsEncoded("INVALIDEMAIL") %>';
+        var ConfirmMessage = '<%=GetTermFromResourceJsEncoded("CONFIRMCANCELPROJECTWIZARD") %>';
+        var ConfirmChangingSourceToLocal = '<%=GetTermFromResourceJsEncoded("CONFIRM_CHANGE_SOURCE_LOCATION_TO_LOCAL") %>';
+        var ConfirmChangingSourceFromLocal = '<%=GetTermFromResourceJsEncoded("CONFIRM_CHANGE_SOURCE_LOCATION_FROM_LOCAL") %>';
+        var ConfirmChangingSourceLocationOSA = '<%=GetTermFromResourceJsEncoded("CONFIRM_CHANGE_SOURCE_LOCATION_OSA") %>';
+        var DELETE_PROJECTS_SUCCESSFULLY = '<%=this.GetTermFromResourceJsEncoded("DELETE_PROJECTS_SUCCESSFULLY")%>';
+        var DELETE_PROJECTS_PARTLY_SUCCESSFUL = '<%=this.GetTermFromResourceJsEncoded("DELETE_PROJECTS_PARTLY_SUCCESSFUL")%>';
+        var DELETE_SCANS_DOWNLOAD_FILE = '<%=this.GetTermFromResourceJsEncoded("DELETE_SCANS_DOWNLOAD_FILE")%>';
+        var DELETE_SCANS_DOWNLOAD_TEXT = '<%=this.GetTermFromResourceJsEncoded("DELETE_SCANS_DOWNLOAD_TEXT")%>';
+        var OK = '<%=this.GetTermFromResourceJsEncoded("OK")%>';
+        var PUBLISH_SCAN_RESULTS_CONFIRMATION = "<%=this.GetTermFromResourceJsEncoded("PUBLISH_SCAN_RESULTS_CONFIRMATION")%>";
+
+        var PUBLISH = '<%=GetTermFromResourceJsEncoded("PUBLISH")%>';
+        var PUBLISHED = '<%=GetTermFromResourceJsEncoded("PUBLISHED")%>';
+        var IN_PROGRESS = '<%=GetTermFromResourceJsEncoded("IN_PROGRESS")%>';
+        var UNPUBLISHED ='<%=GetTermFromResourceJsEncoded("UNPUBLISHED")%>';
+        var STATUS ='<%=GetTermFromResourceJsEncoded("STATUS")%>';
+        var LAST_SUCCESSFUL_PUBLISH = '<%=GetTermFromResourceJsEncoded("LAST_SUCCESSFUL_PUBLISH")%>';
+        var FINISHED = '<%=GetTermFromResourceJsEncoded("FINISHED")%>';
+        var FAILED = '<%=GetTermFromResourceJsEncoded("FAILED")%>';
+        var PUBLISH_SCAN_RESULTS_CONFIRMATION = "<%=this.GetTermFromResourceJsEncoded("PUBLISH_SCAN_RESULTS_CONFIRMATION")%>";
+        var NEVER="<%=this.GetTermFromResourceJsEncoded("NEVER")%>";
+
+
+        //--------------------------Publisher Status Sync Hub--------------------------//
+        var initialize = function () {
+
+            var connection = $.hubConnection(Core.REST.getRestBaseUrl() + Core.REST.restUrlPrefix + "signalr", { useDefaultPath: false });
+
+            this.proxy = connection.createHubProxy('PublisherStatusSyncHub');
+
+           // Listen to the 'UpdateStatus' event that will be pushed from SignalR server
+            this.proxy.on('UpdateStatus', function (projectId,status,finishedDate) {
+                var currentProjectId = $get("<%=hdnSelectedProject.ClientID%>").value;
+                if (projectId == currentProjectId) {
+                    updateDataBystatus(status,finishedDate);
+                }
+            });
+
+            // Connecting to SignalR server        
+            return connection.start({ transport: 'longPolling' })
+            .then(function (connectionObj) {
+                sendProjectIdToHub();
+                return connectionObj;
+            }, function (error) {
+                return error.message;
+            });
+
+        };
+
+        initialize();
+
+
+        var sendProjectIdToHub = function() {
+            var currentProjectId = $get("<%=hdnSelectedProject.ClientID%>").value;
+            if (currentProjectId!=="") {
+                this.proxy.invoke("updateProjectId", currentProjectId);
+            }
+        }
+
+
+        //----------------------End Publisher Status Sync Hub---------------------------//
 
         /* --------------------------------------------------------------
          *                   - Osa project policies -
          * ------------------------------------------------------------*/
 
-
-        var policies_list = [];
-        var default_checked_policies_ids = [];
-        var changes_list = {};
         var arePoliciesDirty = false;
         var osaSettingsDirty = false;
-        // update project policies
-
-        function setProjectPolicyChecked(combo, args) {
-            var itemId = args.get_item().get_value();
-            if (changes_list[itemId]) {
-                delete changes_list[itemId];
-            } else {
-                changes_list[itemId] = itemId;
-            }
-
-            arePoliciesDirty = Object.keys(changes_list).length > 0 ? true : false;
-        }
         //load OSA settings
         function loadOsaSettings() {
             var currentProjectId = $get("<%=hdnSelectedProject.ClientID%>").value;
             if (currentProjectId) {
                 cxOsaSettings.getProjectSettings(currentProjectId,
                     function (response) {
-                        $("#enableOsaResolveDependencies").prop('checked',
-                            response.enableOsaScanResolveDependencies);
-                       
+                        if (response) {
+                            showOSATabContent(response.enableOsaScanResolveDependencies);
+                        } else {
+                            showOSATabEulaNotAcceptedContent();
+                        }
                     });
             }
         }
+
+        function showOSATabContent(resolveDependenciesCheckboxDefaultValue) {
+            $get("<%=divOSATabSpinner.ClientID%>").style.display = "none";
+            $get("<%=disOSATabEulaNotAccepted.ClientID%>").style.display = "none";
+            $get("<%=divOSATab.ClientID%>").style.display = "";
+            $("#enableOsaResolveDependencies").prop('checked', resolveDependenciesCheckboxDefaultValue);
+        }
+
+        function showOSATabEulaNotAcceptedContent() {
+            $get("<%=divOSATabSpinner.ClientID%>").style.display = "none";
+            $get("<%=divOSATab.ClientID%>").style.display = "none";
+            $get("<%=disOSATabEulaNotAccepted.ClientID%>").style.display = "";
+        }
+
         function setOsaSettingsChecked() {
             osaSettingsDirty = true;
         }
@@ -166,92 +262,17 @@
             cxOsaSettings.updateProjectSettings(currentProjectId,
                 osaSettings,
                 function failedToUpdateSettings() {
-                  //  $("#ctl00_cpmain_lblProjectGeneralError").
+                    //  $("#ctl00_cpmain_lblProjectGeneralError").
                 });
         }
 
-        function updateProjectPolicies() {
-            var currentProjectId = $get("<%=hdnSelectedProject.ClientID%>").value;
-            var checkedList = [];
-            for (var i = 0; i < policies_list.length; i++) {
-                var policy = policies_list[i];
-                if ((changes_list[policy.id] && !policy.checked) // if it changed and it was unchecked
-                    || (!changes_list[policy.id] && policy.checked)) { // if it was already checked and didn't change
-                    checkedList.push({ policyId: policy.id });
-                }
-            }
-            cleanDirtyOsaPolicies();
-            cxOsaPolicies.updateProjectPolicies(currentProjectId, checkedList, updateProjectPoliciesFailureCallback);
-        }
-
-        function updateProjectPoliciesFailureCallback() {
-            $("#<%= lblFailedToUpdatePolicies.ClientID %>").css("display", "inline");
-        }
-
-        function cleanDirtyOsaPolicies() {
-            changes_list = {};
-            arePoliciesDirty = false;
-        }
-       
         // load policies
-        function loadPoliciesData() {
-            cxOsaPolicies.getAll(loadAllPoliciesSuccessCallback,loadAllPoliciesFailureCallback);
-        }
-
-        function loadAllPoliciesFailureCallback(error) {
-            $("#<%= lblFailedToLoadPolicies.ClientID %>").css("display", "inline");
-        }
-
-        function loadAllPoliciesSuccessCallback(items) {
-            policies_list = items;
+        function loadPolicies() {
+            var listComboBox = $find("<%= cmbProjectPolicies.ClientID %>");
             var currentProjectId = $get("<%=hdnSelectedProject.ClientID%>").value;
-            cxOsaPolicies.getProjectPolicies(currentProjectId, getProjectPoliciesCallback);
-        }
-
-        function getProjectPoliciesCallback(checkedItemsIdList) {
-            setCheckedPolicies(checkedItemsIdList);
-            fillProjectPoliciesDropdown();
-        }
-
-        function setCheckedPolicies(checkedItemsIdList) {
-            default_checked_policies_ids = convertArrayToObject(checkedItemsIdList);
-            for (var i = 0; i < policies_list.length; i++) {
-                if (default_checked_policies_ids[policies_list[i].id]) {
-                    policies_list[i].checked = true;
-                }
-            }
-            policies_list.sort(function (a, b) { return a.checked ? -1 : 1; });
-        }
-
-        function fillProjectPoliciesDropdown() {
-            var list = $find("<%= cmbProjectPolicies.ClientID %>");
-            list.clearItems();
-            for (var i = 0; i < policies_list.length; i++) {
-                var comboItem = createPolicyComboItem(policies_list[i]);
-                list.get_items().add(comboItem);
-            }
-        }
-
-        function createPolicyComboItem(item) {
-            var comboItem = new Telerik.Web.UI.RadComboBoxItem();
-            comboItem.set_text(item.name);
-            comboItem.set_value(item.id);
-            if (default_checked_policies_ids[item.id]) {
-                comboItem.set_checked(true);
-            }
-            return comboItem;
-        }
-
-        function convertArrayToObject(array) {
-            var result = {};
-            for (var i = 0; i < array.length; i++) {
-                result[array[i]] = array[i];
-            }
-            return result;
-        }
-
-        function disableRadComboBoxInputField(sender) {
-            sender.get_inputDomElement().readOnly = "readonly";
+            var lblFailedToLoadPolicies = $("#<%= lblFailedToLoadPolicies.ClientID %>");
+            var lblFailedToUpdatePolicies = $("#<%= lblFailedToUpdatePolicies.ClientID %>");
+            loadPoliciesData(listComboBox, true, currentProjectId, lblFailedToLoadPolicies, lblFailedToUpdatePolicies);
         }
 
         /* --------------------------------------------------------------
@@ -261,54 +282,54 @@
 
         function OpenEmailDialog(i_Type) {
             var url = "popEmailsDialog.aspx?emails=";
-            if(i_Type==1) {
-                url+=$get("<%=txtAfterScanSucceds.ClientID%>").value;
-            } else if(i_Type==2){
-                url+=$get("<%=txtBeforeStartScan.ClientID%>").value;
+            if (i_Type == 1) {
+                url += $get("<%=txtAfterScanSucceds.ClientID%>").value;
+            } else if (i_Type == 2) {
+                url += $get("<%=txtBeforeStartScan.ClientID%>").value;
             } else {
-                url+=$get("<%=txtScanFailed.ClientID%>").value;
+                url += $get("<%=txtScanFailed.ClientID%>").value;
             }
-            
-        var oWnd=radopen(url,null);
-        emailsType = i_Type;
-        oWnd.SetSize(450,440);
-        oWnd.Center();
-        oWnd.add_close(EmailsDialogClosed);
-    }
 
-    function EmailsDialogClosed(Wnd, args){
-        var arg = args.get_argument();
-        if (arg) {
-            if(!arg.canceled) {
-                if(emailsType==1) {
-                    $get("<%=txtAfterScanSucceds.ClientID%>").value = arg.Emails;
-                } else if(emailsType==2) {
+            var oWnd = radopen(url, null);
+            emailsType = i_Type;
+            oWnd.SetSize(450, 440);
+            oWnd.Center();
+            oWnd.add_close(EmailsDialogClosed);
+        }
+
+        function EmailsDialogClosed(Wnd, args) {
+            var arg = args.get_argument();
+            if (arg) {
+                if (!arg.canceled) {
+                    if (emailsType == 1) {
+                        $get("<%=txtAfterScanSucceds.ClientID%>").value = arg.Emails;
+                } else if (emailsType == 2) {
                     $get("<%=txtBeforeStartScan.ClientID%>").value = arg.Emails;
                 } else {
                     $get("<%=txtScanFailed.ClientID%>").value = arg.Emails;
+                    }
                 }
+            }
         }
-    }
-}
 
-function OpenPullingDialog() {
-    var combo = $find("<%= cmbGroup.ClientID %>");
-        var val = combo.get_value(); // getting the selected value
-        var oWnd = radopen("popCredentialsDialog.aspx?op=2&TeamId="+val, null);
-            oWnd.SetSize(410,230);
+        function OpenPullingDialog() {
+            var combo = $find("<%= cmbGroup.ClientID %>");
+            var val = combo.get_value(); // getting the selected value
+            var oWnd = radopen("popCredentialsDialog.aspx?op=2&TeamId=" + val, null);
+            oWnd.SetSize(410, 230);
             oWnd.Center();
             oWnd.add_close(OpenPullingDialogClosed);
         }
 
-        function OpenPullingDialogClosed(Wnd, args){
+        function OpenPullingDialogClosed(Wnd, args) {
             var arg = args.get_argument();
             if (arg) {
-                if(!arg.canceled) {
+                if (!arg.canceled) {
                     setTimeout(function () {
                         var combo = $find("<%= cmbGroup.ClientID %>");
                         var val = combo.get_value(); // getting the selected value
                         var oWnd = radopen("popSourcePullingDialog.aspx?TeamId=" + val, null);
-                        oWnd.SetSize(430,450);
+                        oWnd.SetSize(430, 450);
                         oWnd.Center();
                         oWnd.add_close(PullingClosed);
                     }, 0);
@@ -316,36 +337,36 @@ function OpenPullingDialog() {
             }
         }
 
-        function PullingClosed(Wnd, args){
+        function PullingClosed(Wnd, args) {
             var arg = args.get_argument();
             if (arg) {
-                if(!arg.canceled) {
+                if (!arg.canceled) {
                     $get("<%=txtPulling.ClientID%>").value = arg.pathlist;
                 }
             }
         }
 
-        function OpenSourceControlDialog() {  	        
+        function OpenSourceControlDialog() {
             var port = $get('<%=PortHiddenField.ClientID%>').value;
             var serverName = $get('<%=ServerNameHiddenField.ClientID%>').value;
             var repository = $get('<%=RepositoryHiddenField.ClientID%>').value;
-            var collaboratorHiddenField = $get('<%=HiddenGitHubUserName.ClientID%>').value;           
+            var collaboratorHiddenField = $get('<%=HiddenGitHubUserName.ClientID%>').value;
             var tresholdHiddenField = $get('<%=HiddenGitHubTreshold.ClientID%>').value;
-            var oWnd=radopen("popSourceControlSettingsDialog.aspx?Mode=Update&Port="+ port + "&ServerName=" + encodeURIComponent(serverName) 
-                                                                                             + "&Repository=" + repository +"&CollaboratorUserName=" + collaboratorHiddenField +                                                                                           
-                                                                                             "&TresholdValue=" + tresholdHiddenField, null);
-            oWnd.SetSize(535,446);
+            var oWnd = radopen("popSourceControlSettingsDialog.aspx?Mode=Update&Port=" + port + "&ServerName=" + encodeURIComponent(serverName)
+                + "&Repository=" + repository + "&CollaboratorUserName=" + collaboratorHiddenField +
+                "&TresholdValue=" + tresholdHiddenField, null);
+            oWnd.SetSize(535, 446);
             oWnd.Center();
             oWnd.add_close(SourceControlSettingsClosed);
         }
 
         function SourceControlSettingsClosed(Wnd, args) {
             var arg = args.get_argument();
-            if (arg){
-                if(!arg.canceled){
+            if (arg) {
+                if (!arg.canceled) {
                     setTimeout(function () {
-                        var oWnd = radopen('popFoldersTree.aspx?Type=<%=BrowseTreeType.SourceControl%>&BrowseOrigin=<%=BrowseOrigin.SourceControl%>', null); 
-                        oWnd.SetSize(450,470);
+                        var oWnd = radopen('popFoldersTree.aspx?Type=<%=BrowseTreeType.SourceControl%>&BrowseOrigin=<%=BrowseOrigin.SourceControl%>', null);
+                        oWnd.SetSize(450, 470);
                         oWnd.Center();
                         oWnd.add_close(SourceControlClosed);
                     }, 0);
@@ -356,28 +377,28 @@ function OpenPullingDialog() {
         function SourceControlClosed(Wnd, args) {
             var arg = args.get_argument();
             if (arg) {
-                if(!arg.canceled) {
+                if (!arg.canceled) {
                     $get("<%=txtSourceCtrl.ClientID%>").value = arg.pathList;
                     $get("<%=txtSCUrl.ClientID%>").value = arg.url;
                 }
             }
         }
-    
+
         function OpenSharedSourceDialog() {
-            var oWnd=radopen("popCredentialsDialog.aspx?op=1", null);
-            oWnd.SetSize(430,230);
+            var oWnd = radopen("popCredentialsDialog.aspx?op=1", null);
+            oWnd.SetSize(430, 230);
             oWnd.Center();
             oWnd.add_close(CredentialsClosed);
         }
-    
+
         function CredentialsClosed(Wnd, args) {
             var arg = args.get_argument();
             if (arg) {
-                if(!arg.canceled) {
+                if (!arg.canceled) {
                     setTimeout(function () {
                         var currentPath = encodeURI($get("<%=txtShared.ClientID%>").value);
                         var oWnd = radopen('popFoldersTree.aspx?Type=<%=BrowseTreeType.Network%>&BrowseOrigin=<%=BrowseOrigin.Location%>', null);
-                        oWnd.SetSize(450,460);
+                        oWnd.SetSize(450, 460);
                         oWnd.Center();
                         oWnd.add_close(OpenSharedSourceDialogClosed);
                     }, 0);
@@ -386,31 +407,31 @@ function OpenPullingDialog() {
         }
 
         function OpenSharedOpenSourceDialog() {
-            var oWnd=radopen("popCredentialsDialog.aspx?op=1", null);
-            oWnd.SetSize(430,230);
+            var oWnd = radopen("popCredentialsDialog.aspx?op=1", null);
+            oWnd.SetSize(430, 230);
             oWnd.Center();
-            oWnd.add_close(OpenSourceCredentialsClosed);            
+            oWnd.add_close(OpenSourceCredentialsClosed);
         }
-    
+
         function OpenSourceCredentialsClosed(Wnd, args) {
             var arg = args.get_argument();
             if (arg) {
-                if(!arg.canceled) {
+                if (!arg.canceled) {
                     setTimeout(function () {
                         var currentPath = encodeURI($get("<%=txtOSAShared.ClientID%>").value);
                         var oWnd = radopen('popFoldersTree.aspx?Type=<%=BrowseTreeType.Network%>&BrowseOrigin=<%=BrowseOrigin.OSA%>', null);
-                        oWnd.SetSize(450,470);
+                        oWnd.SetSize(450, 470);
                         oWnd.Center();
                         oWnd.add_close(OpenSharedOpenSourceDialogClosed);
                     }, 0);
                 }
             }
         }
-    
+
         function OpenSharedSourceDialogClosed(Wnd, args) {
             var arg = args.get_argument();
             if (arg) {
-                if(!arg.canceled) {
+                if (!arg.canceled) {
                     $get("<%=txtShared.ClientID%>").value = arg.pathList;
                 }
             }
@@ -419,60 +440,49 @@ function OpenPullingDialog() {
         function OpenSharedOpenSourceDialogClosed(Wnd, args) {
             var arg = args.get_argument();
             if (arg) {
-                if(!arg.canceled) {
+                if (!arg.canceled) {
                     $get("<%=txtOSAShared.ClientID%>").value = arg.pathList;
                 }
             }
         }
-    
+
         function RunLocalProject(i_IsIncremental) {
-            var oWnd=radopen("popLocalSource.aspx",null);
-            oWnd.SetSize(430,180);
+            var oWnd = radopen("popLocalSource.aspx", null);
+            oWnd.SetSize(430, 180);
             oWnd.Center();
             oWnd.add_close(RunLocalWinClosed);
             incremental = i_IsIncremental;
         }
-    
+
         function OpenLocalDialog() {
-            var oWnd=radopen("popLocalSource.aspx",null);
-            oWnd.SetSize(430,190);
+            var oWnd = radopen("popLocalSource.aspx", null);
+            oWnd.SetSize(430, 190);
             oWnd.Center();
             oWnd.add_close(LocalDialogClosed);
         }
-   
+
         function LocalDialogClosed(oWnd, args) {
             var arg = args.get_argument();
             if (arg) {
-                if(!arg.canceled) {
+                if (!arg.canceled) {
                     $get("<%=txtLocal.ClientID%>").value = arg.filename;
                 }
             }
         }
-    
+
         function RunLocalWinClosed(oWnd, args) {
             var arg = args.get_argument();
             if (arg) {
-                if(!arg.canceled) {
+                if (!arg.canceled) {
                     $get('<%=hdnIsIncremental.ClientID%>').value = incremental;
-                    $telerik.$("#<%=btnRunLocal.ClientID%>").trigger('click');
+                    $telerik.$("#<%=btnRunLocal.ClientID%>")[0].click();
                 }
             }
         }
 
         function ConfirmWindow(i_Msg, i_Event) {
             var e = $telerik.$.event.fix(i_Event || window.event);
-            openConfirm(i_Msg, i_Event,function(){eval( $telerik.$(e.currentTarget ? e.currentTarget : e.srcElement.parentNode).attr('href'));});
-        }
-            
-        function onRequestStart(sender, args) {
-          
-            requestStart(sender, args);
-
-            if (args.get_eventTarget().indexOf("_GridToolbar") >= 0) {
-                if (toolbarBtn.get_value() != "REFRESH") {
-                    args.set_enableAjax(false);
-                }
-            }
+            openConfirm(i_Msg, i_Event, function () { eval($telerik.$(e.currentTarget ? e.currentTarget : e.srcElement.parentNode).attr('href')); });
         }
 
         function ProjectRowSelected(sender, eventArgs) {
@@ -482,30 +492,28 @@ function OpenPullingDialog() {
         }
 
         var toolbarBtn = null;
-        var DELETE_PROJECTS_CONFIRMATION = '<%=this.GetTermFromResourceJSEncoded("DELETE_PROJECTS_CONFIRMATION")%>';
-        var DELETE_PROJECTS_WITH_OSA_CONFIRMATION = '<%=this.GetTermFromResourceJSEncoded("DELETE_PROJECTS_WITH_OSA_CONFIRMATION")%>';
-        var SELECT_PROJECTS_2_DELETE = '<%=this.GetTermFromResourceJSEncoded("SELECT_PROJECTS_2_DELETE")%>';
+        var DELETE_PROJECTS_CONFIRMATION = '<%=this.GetTermFromResourceJsEncoded("DELETE_PROJECTS_CONFIRMATION")%>';
+        var DELETE_PROJECTS_WITH_OSA_CONFIRMATION = '<%=this.GetTermFromResourceJsEncoded("DELETE_PROJECTS_WITH_OSA_CONFIRMATION")%>';
+        var SELECT_PROJECTS_2_DELETE = '<%=this.GetTermFromResourceJsEncoded("SELECT_PROJECTS_2_DELETE")%>';
 
         function onClientButtonClicking(sender, args) {
             toolbarBtn = args.get_item();
-            if(args.get_item().get_value() == '<%=k_NewProjectValue%>'){
+            if (args.get_item().get_value() == '<%=k_NewProjectValue%>') {
                 window.location = 'NewProject.aspx';
                 args.set_cancel(true);
-            }else if (args.get_item().get_value() == '<%=k_Back2ProjectStateValue%>') {
+            } else if (args.get_item().get_value() == '<%=k_Back2ProjectStateValue%>') {
                 window.location = 'portal#/projectState/' + <%=m_SelectedProjectID%> + '/Summary';
                 args.set_cancel(true);
 
-            } else if(args.get_item().get_value() == '<%=k_DeleteProjectsValue%>'){
+            } else if (args.get_item().get_value() == '<%=k_DeleteProjectsValue%>') {
                 args.set_cancel(true);
                 deleteProjects(false);
             }
         }
 
-        function selectedProjectsContainOsaScans()
-        {
+        function selectedProjectsContainOsaScans() {
             var items = $find('<%=ProjectsGrid.ClientID%>').get_seletedCheckboxItems();
-            if(items != null)
-            {
+            if (items != null) {
                 var masterTable = $find('<%=ProjectsGrid.ClientID%>').get_masterTableView();
                 for (var i = 0; i < items.length; i++) {
 
@@ -520,8 +528,7 @@ function OpenPullingDialog() {
             return false;
         }
 
-        function getDeletionMessageTemplate()
-        {
+        function getDeletionMessageTemplate() {
             var template = DELETE_PROJECTS_CONFIRMATION;
             if (selectedProjectsContainOsaScans()) {
                 template = DELETE_PROJECTS_WITH_OSA_CONFIRMATION;
@@ -530,13 +537,11 @@ function OpenPullingDialog() {
             return template;
         }
 
-        function deleteProjects(isConfirmed, flags)
-        {
+        function deleteProjects(isConfirmed, flags) {
             var projectIDs = new Array();
             var items = $find('<%=ProjectsGrid.ClientID%>').get_seletedCheckboxItems();
-            
-            if(items != null)
-            {
+
+            if (items != null) {
                 for (var i = 0; i < items.length; i++) {
                     var id = items[i].getDataKeyValue("ProjectID");
                     projectIDs.push(id);
@@ -544,11 +549,11 @@ function OpenPullingDialog() {
             }
 
             if (projectIDs.length == 0) {
-                
+
                 openInfo(SELECT_PROJECTS_2_DELETE);
                 return;
             } else if (!isConfirmed) {
-                
+
                 var message = String.format(getDeletionMessageTemplate(), projectIDs.length);
                 openConfirm(message, null, function () { deleteProjects(true, flags); });
                 return;
@@ -560,17 +565,17 @@ function OpenPullingDialog() {
                 type: 'POST',
                 async: false,
                 url: 'Projects.aspx/DeleteProjects',
-                data: '{\'projectIdsToDelete\':' + JSON.stringify(projectIDs) + 
-                      ',\'flags\':\'' + flags + '\'}',
+                data: '{\'projectIdsToDelete\':' + JSON.stringify(projectIDs) +
+                    ',\'flags\':\'' + flags + '\'}',
                 contentType: 'application/json; charset=utf-8',
                 dataType: 'json',
-                success: function(response) {
+                success: function (response) {
                     if (response.d == null) {
-                        top.location.href = 'Login.aspx?logout=true';
+                        top.location.href = 'Logout.aspx';
                     } else if (response.d.IsSuccessful) {
-                            deselectAll('<%=ProjectsGrid.ClientID%>');
-                            $find('<%=ProjectsGrid.ClientID%>').get_masterTableView().rebind();
-                    } else if (response.d.UndeletedProjects != null &&  response.d.UndeletedProjects.length > 0){
+                        deselectAll('<%=ProjectsGrid.ClientID%>');
+                        $find('<%=ProjectsGrid.ClientID%>').get_masterTableView().rebind();
+                    } else if (response.d.UndeletedProjects != null && response.d.UndeletedProjects.length > 0) {
                         $find('<%=ProjectsGrid.ClientID%>').get_masterTableView().rebind();
                         var title = DELETE_PROJECTS_PARTLY_SUCCESSFUL.replace('{0}', response.d.NumOfDeletedProjects).replace('{1}', response.d.NumOfDeletedProjects + response.d.UndeletedProjects.length);
                         showDeleteObjectsPopup(response.d.UndeletedProjects, response.d.NumOfDeletedProjects, title, DELETE_SCANS_DOWNLOAD_TEXT, OK, DELETE_SCANS_DOWNLOAD_FILE);
@@ -583,115 +588,111 @@ function OpenPullingDialog() {
             });
         }
 
-        function deselectAll(gridId){
+        function deselectAll(gridId) {
             var selectAllCheckbox = $telerik.$('#' + gridId + ' ._cxGrid_SelAll input[type=checkbox]');
-            if(selectAllCheckbox.is(':checked')){
+            if (selectAllCheckbox.is(':checked')) {
                 selectAllCheckbox.removeAttr('checked');
                 selectAllCheckbox.prop('checked', false);
             }
             cxGrid_SelectAll(selectAllCheckbox);
         }
-        
+
         function updateClick(button, args) {
             var disabled = true;
-        
 
-            if (button.get_uniqueID().indexOf("btnCancel")>=0) {
+
+            if (button.get_uniqueID().indexOf("btnCancel") >= 0) {
                 cleanAllTextFields();
                 // cancel button click
-                $find("<%=btnUpdate.ClientID%>").set_text('<%=this.GetTermFromResourceJSEncoded("EDIT")%>');
+                $find("<%=btnUpdate.ClientID%>").set_text('<%=this.GetTermFromResourceJsEncoded("EDIT")%>');
                 $telerik.$("#<%=btnCancel.ClientID%>").hide();
                 $get("<%=hdnPreviousProjectType.ClientID%>").value = $get("<%=hdnProjectType.ClientID%>").value;
                 $get("<%=hdnOsaPreviousOrigin.ClientID%>").value = $get("<%=hdnOsaOrigin.ClientID%>").value;
                 choosePreviousSource();
                 cleanDirtyOsaPolicies();
                 osaSettingsDirty = false;
-            } else {  
-                if($get("<%=hdnSelectedProject.ClientID%>").value > "") {
-                    if (button.get_text() == '<%=this.GetTermFromResourceJSEncoded("EDIT")%>') {
+            } else {
+                if ($get("<%=hdnSelectedProject.ClientID%>").value > "") {
+                    if (button.get_text() == '<%=this.GetTermFromResourceJsEncoded("EDIT")%>') {
                         // edit button click
-                        button.set_text('<%=this.GetTermFromResourceJSEncoded("UPDATE")%>');
+                        button.set_text('<%=this.GetTermFromResourceJsEncoded("UPDATE")%>');
                         button.set_autoPostBack(false);
-                        disabled=false;
+                        disabled = false;
                         $telerik.$("#<%=btnCancel.ClientID%>").show();
-                        } else {
+                    } else {
                         // update button click
-                            if (arePoliciesDirty) {
-                                updateProjectPolicies();
+                        if (arePoliciesDirty) {
+                            updateProjectPolicies();
                         }
                         if (osaSettingsDirty) {
                             updateOsaSettings();
                         }
 
-                            if (typeof (Page_ClientValidate) == 'function') {
-                                Page_ClientValidate();         
-                            }
-                            if (Page_IsValid) {
-                                $get("<%=hdnProjectType.ClientID%>").value = getSourceLocation(GetMarkedSourceLocationRadioButton().value);
-                                $get("<%=hdnOsaOrigin.ClientID%>").value = getCurrentOsaOrigin();
-                                $find("<%=btnUpdate.ClientID%>").set_text('<%=this.GetTermFromResourceJSEncoded("EDIT")%>');
-                                $telerik.$("#<%=btnCancel.ClientID%>").hide();
-                                button.set_autoPostBack(true);
-                            } else {
-                                button.set_autoPostBack(false);
-                            }
-                            return;
+                        if (typeof (Page_ClientValidate) == 'function') {
+                            Page_ClientValidate();
                         }
-                    } else {
-                        button.set_autoPostBack(false);
+                        if (Page_IsValid) {
+                            $get("<%=hdnProjectType.ClientID%>").value = getSourceLocation(GetMarkedSourceLocationRadioButton().value);
+                                $get("<%=hdnOsaOrigin.ClientID%>").value = getCurrentOsaOrigin();
+                                $find("<%=btnUpdate.ClientID%>").set_text('<%=this.GetTermFromResourceJsEncoded("EDIT")%>');
+                                $telerik.$("#<%=btnCancel.ClientID%>").hide();
+                            button.set_autoPostBack(true);
+                        } else {
+                            button.set_autoPostBack(false);
+                        }
+                        return;
                     }
+                } else {
+                    button.set_autoPostBack(false);
                 }
-    
-                var isLocal = ($get("<%=hdnProjectType.ClientID%>").value == "LOCAL");
+            }
+
+            var isLocal = ($get("<%=hdnProjectType.ClientID%>").value == "LOCAL");
 
             EnableDetailFrame(!disabled);
 
-            if(isLocal) {
+            if (isLocal) {
 
                 disableSchedulingPane(isLocal);
                 $find("<%=btnLocal.ClientID%>").set_enabled(false);
-                    $find("<%=btnPulling.ClientID%>").set_enabled(false);
+                $find("<%=btnPulling.ClientID%>").set_enabled(false);
                 $find("<%=btnShared.ClientID%>").set_enabled(false);
                 $find("<%=btnSourceCtrl.ClientID%>").set_enabled(false);
-                
+
             }
         }
 
-        function cleanAllTextFields(){            
-                var $form = $('#aspnetForm');              
+        function cleanAllTextFields() {
+            var $form = $('#aspnetForm');
 
-                $form.find("input[type='text'], textarea").each(
-                    function (index) {
-                        if( $(this).val().length > 0){
-                            if(!checkXSSFieldByRegularExpressionByValue($(this).val())){
-                                $(this).val("");
-                            }                                
-                        } 
+            $form.find("input[type='text'], textarea").each(
+                function (index) {
+                    if ($(this).val().length > 0) {
+                        if (!checkXSSFieldByRegularExpressionByValue($(this).val())) {
+                            $(this).val("");
+                        }
                     }
-                )                            
+                }
+            )
         }
 
-        function getSourceLocation(i_objectValue){
-            if (i_objectValue === $get("<%=rbLocal.ClientID%>").value)
-            {
+        function getSourceLocation(i_objectValue) {
+            if (i_objectValue === $get("<%=rbLocal.ClientID%>").value) {
                 return "LOCAL";
             }
-            if (i_objectValue === $get("<%=rbPulling.ClientID%>").value)
-            {
+            if (i_objectValue === $get("<%=rbPulling.ClientID%>").value) {
                 return "SOURCEPULLING";
             }
-            if (i_objectValue === $get("<%=rbShared.ClientID%>").value)
-            {
+            if (i_objectValue === $get("<%=rbShared.ClientID%>").value) {
                 return "SHARED";
             }
-            if (i_objectValue === $get("<%=rbSourceCtrl.ClientID%>").value)
-            {
+            if (i_objectValue === $get("<%=rbSourceCtrl.ClientID%>").value) {
                 return "SOURCECONTROL";
             }
         }
 
         function ShcedulingChanged(i_object) {
-            if (SchedulingPaneDisabled()){
+            if (SchedulingPaneDisabled()) {
                 return;
             }
             if ((i_object.value === $get("<%=rbNone.ClientID%>").value) || (i_object.value === $get("<%=rbNow.ClientID%>").value)) {
@@ -699,25 +700,25 @@ function OpenPullingDialog() {
                 UncheckScheduledDays();
                 disableChoosingSchedulingDaysAndTime();
 
-                var timePicker = $find("<%=TimeInput.ClientID%>"); 
-                timePicker.get_dateInput().set_value("12:00 AM"); 
+                var timePicker = $find("<%=TimeInput.ClientID%>");
+                timePicker.get_dateInput().set_value("12:00 AM");
 
             }
-            else{
+            else {
                 enableChoosingSchedulingDaysAndTime();
             }
         }
 
-        function SchedulingPaneDisabled(){
+        function SchedulingPaneDisabled() {
             if ($telerik.$("#<%=rbNone.ClientID%>").is(":enabled") || $telerik.$("#<%=rbNow.ClientID%>").is(":enabled") || $telerik.$("#<%=rbBySched.ClientID%>").is(":enabled")) {
                 return false;
             }
             return true;
         }
 
-        function enableChoosingSchedulingDaysAndTime(){
+        function enableChoosingSchedulingDaysAndTime() {
             var panelExists = ensureDetailsPanelVisible();
-            if(!panelExists) return;
+            if (!panelExists) return;
 
             $telerik.$("#<%=cbMo.ClientID%>").removeAttr("disabled");
             $telerik.$("#<%=cbFr.ClientID%>").removeAttr("disabled");
@@ -730,19 +731,19 @@ function OpenPullingDialog() {
 
         }
 
-        function disableChoosingSchedulingDaysAndTime(){
+        function disableChoosingSchedulingDaysAndTime() {
             var panelExists = ensureDetailsPanelVisible();
-            if(!panelExists) return;
+            if (!panelExists) return;
 
-            $telerik.$("#<%=cbMo.ClientID%>").attr("disabled","disabled");
-            $telerik.$("#<%=cbFr.ClientID%>").attr("disabled","disabled");
-            $telerik.$("#<%=cbSa.ClientID%>").attr("disabled","disabled");
-            $telerik.$("#<%=cbSu.ClientID%>").attr("disabled","disabled");
-            $telerik.$("#<%=cbTh.ClientID%>").attr("disabled","disabled");
-            $telerik.$("#<%=cbTu.ClientID%>").attr("disabled","disabled");
-            $telerik.$("#<%=cbWe.ClientID%>").attr("disabled","disabled");
+            $telerik.$("#<%=cbMo.ClientID%>").attr("disabled", "disabled");
+            $telerik.$("#<%=cbFr.ClientID%>").attr("disabled", "disabled");
+            $telerik.$("#<%=cbSa.ClientID%>").attr("disabled", "disabled");
+            $telerik.$("#<%=cbSu.ClientID%>").attr("disabled", "disabled");
+            $telerik.$("#<%=cbTh.ClientID%>").attr("disabled", "disabled");
+            $telerik.$("#<%=cbTu.ClientID%>").attr("disabled", "disabled");
+            $telerik.$("#<%=cbWe.ClientID%>").attr("disabled", "disabled");
 
-            var timePicker = $find("<%=TimeInput.ClientID%>"); 
+            var timePicker = $find("<%=TimeInput.ClientID%>");
             timePicker.set_enabled(false);
 
         }
@@ -753,7 +754,7 @@ function OpenPullingDialog() {
             var previousSourceLocation = hdnPreviousProjectType.value;
             var currentSourceLocation = getSourceLocation(i_object.value);
 
-            if (previousSourceLocation == currentSourceLocation){
+            if (previousSourceLocation == currentSourceLocation) {
                 return;
             }
 
@@ -763,55 +764,53 @@ function OpenPullingDialog() {
 
             var changedToLocal = $get("<%=rbLocal.ClientID%>").checked;
 
-            if (!wasLocal && changedToLocal){
+            if (!wasLocal && changedToLocal) {
                 // deal with change to local
-                openConfirm(ConfirmChangingSourceToLocal, 
-                    null, 
+                openConfirm(ConfirmChangingSourceToLocal,
+                    null,
                     // if the user clicked "yes" it changes to local :
-                    function () { disableSchedulingPane(true); hdnPreviousProjectType.value = currentSourceLocation; }, 
-                    false, 
+                    function () { disableSchedulingPane(true); hdnPreviousProjectType.value = currentSourceLocation; },
+                    false,
                     // if the user clicks "no" it stays as it was
-                    function () { enableSchedulingPane(); choosePreviousSource(); } );
+                    function () { enableSchedulingPane(); choosePreviousSource(); });
             }
             else if (wasLocal && !changedToLocal) {
                 // deal with change from local to other 
-                openConfirm(ConfirmChangingSourceFromLocal, 
-                    null, 
+                openConfirm(ConfirmChangingSourceFromLocal,
+                    null,
                     // if the user clicked "yes" it changes from local :
-                    function () { enableSchedulingPane(); hdnPreviousProjectType.value = currentSourceLocation; }, 
-                    false, 
+                    function () { enableSchedulingPane(); hdnPreviousProjectType.value = currentSourceLocation; },
+                    false,
                     // if the user clicks "no" it stays local
-                    function () { disableSchedulingPane(true);  choosePreviousSource(); } );
+                    function () { disableSchedulingPane(true); choosePreviousSource(); });
             }
-            else{
+            else {
 
                 hdnPreviousProjectType.value = currentSourceLocation;
             }
         }
 
-        function OsaLocationChanged(sender)
-        {
+        function OsaLocationChanged(sender) {
             var hdnPreviousOsaOrigin = $get("<%=hdnOsaPreviousOrigin.ClientID%>");
             var previousOsaOrigin = hdnPreviousOsaOrigin.value;
             var currentOsaOrigin = getCurrentOsaOrigin(sender.value);
-            
+
             if (previousOsaOrigin != currentOsaOrigin) {
                 setOSASharedButtonEnabled();
 
-                return openConfirm(ConfirmChangingSourceLocationOSA, 
-                                   null, 
-                                   // The user clicked "yes"
-                                   function () { hdnPreviousOsaOrigin.value = currentOsaOrigin }, 
-                                   false, 
-                                   // The user clicked "no" 
-                                   function () { chooseOsaOrigin(previousOsaOrigin); });
+                return openConfirm(ConfirmChangingSourceLocationOSA,
+                    null,
+                    // The user clicked "yes"
+                    function () { hdnPreviousOsaOrigin.value = currentOsaOrigin },
+                    false,
+                    // The user clicked "no" 
+                    function () { chooseOsaOrigin(previousOsaOrigin); });
             }
-            
+
         }
 
-        function chooseOsaOrigin(previousOsaOrigin)
-        {
-            switch(previousOsaOrigin) {
+        function chooseOsaOrigin(previousOsaOrigin) {
+            switch (previousOsaOrigin) {
                 case 'LOCALPATH':
                     $get("<%=rbOsaOriginLocal.ClientID%>").checked = true;
                     break;
@@ -823,20 +822,18 @@ function OpenPullingDialog() {
             setOSASharedButtonEnabled();
         }
 
-        function getCurrentOsaOrigin(senderName){
-            if (senderName === $get("<%=rbOsaOriginLocal.ClientID%>").value)
-            {
+        function getCurrentOsaOrigin(senderName) {
+            if (senderName === $get("<%=rbOsaOriginLocal.ClientID%>").value) {
                 return "LOCALPATH";
             }
-            else
-            {
+            else {
                 return "SHAREDPATH";
             }
         }
 
-        function enableSourceLocationButtonsByRadioButtons(){
+        function enableSourceLocationButtonsByRadioButtons() {
             var panelExists = ensureDetailsPanelVisible();
-            if(!panelExists) return;
+            if (!panelExists) return;
 
             $find("<%=btnLocal.ClientID%>").set_enabled(false);
             $find("<%=btnPulling.ClientID%>").set_enabled($get("<%=rbPulling.ClientID%>").checked);
@@ -844,16 +841,15 @@ function OpenPullingDialog() {
             $find("<%=btnSourceCtrl.ClientID%>").set_enabled($get("<%=rbSourceCtrl.ClientID%>").checked);
         }
 
-        function setOSASharedButtonEnabled()
-        {
+        function setOSASharedButtonEnabled() {
             $find("<%=btnOSAShared.ClientID%>").set_enabled($get("<%=rbOsaOriginShared.ClientID%>").checked);
         }
 
-        function choosePreviousSource(){
+        function choosePreviousSource() {
 
             var hdnPreviousProjectType = $get("<%=hdnPreviousProjectType.ClientID%>");
 
-            switch(hdnPreviousProjectType.value) {
+            switch (hdnPreviousProjectType.value) {
 
                 case 'LOCAL':
                     $get("<%=rbLocal.ClientID%>").checked = true;
@@ -875,11 +871,11 @@ function OpenPullingDialog() {
 
         function disableSchedulingPane(i_Local) {
             var panelExists = ensureDetailsPanelVisible();
-            if(!panelExists) return;
+            if (!panelExists) return;
 
-            $telerik.$("#<%=rbNone.ClientID%>").attr("disabled","disabled");
-            $telerik.$("#<%=rbNow.ClientID%>").attr("disabled","disabled");
-            $telerik.$("#<%=rbBySched.ClientID%>").attr("disabled","disabled");
+            $telerik.$("#<%=rbNone.ClientID%>").attr("disabled", "disabled");
+            $telerik.$("#<%=rbNow.ClientID%>").attr("disabled", "disabled");
+            $telerik.$("#<%=rbBySched.ClientID%>").attr("disabled", "disabled");
             disableChoosingSchedulingDaysAndTime();
 
             if (i_Local) {
@@ -889,13 +885,13 @@ function OpenPullingDialog() {
 
                 UncheckScheduledDays();
 
-                var timePicker = $find("<%=TimeInput.ClientID%>"); 
-                timePicker.get_dateInput().set_value("12:00 AM"); 
+                var timePicker = $find("<%=TimeInput.ClientID%>");
+                timePicker.get_dateInput().set_value("12:00 AM");
 
             }
         }
 
-        function UncheckScheduledDays(){
+        function UncheckScheduledDays() {
             $get('<%=cbMo.ClientID%>').checked = false;
             $get('<%=cbTu.ClientID%>').checked = false;
             $get('<%=cbWe.ClientID%>').checked = false;
@@ -907,38 +903,38 @@ function OpenPullingDialog() {
 
         function enableSchedulingPane() {
             var panelExists = ensureDetailsPanelVisible();
-            if(!panelExists) return;
+            if (!panelExists) return;
 
             $telerik.$("#<%=rbNone.ClientID%>").removeAttr("disabled");
-                $telerik.$("#<%=rbNow.ClientID%>").removeAttr("disabled");
-                $telerik.$("#<%=rbBySched.ClientID%>").removeAttr("disabled");
-                enableChoosingSchedulingDaysAndTime();
+            $telerik.$("#<%=rbNow.ClientID%>").removeAttr("disabled");
+            $telerik.$("#<%=rbBySched.ClientID%>").removeAttr("disabled");
+            enableChoosingSchedulingDaysAndTime();
 
-                // if the marked scheduling is none or now don't allow choosing days and time
-                ShcedulingChanged(GetMarkedSchedulingRadioButton());
-            }
+            // if the marked scheduling is none or now don't allow choosing days and time
+            ShcedulingChanged(GetMarkedSchedulingRadioButton());
+        }
 
-            function GetMarkedSchedulingRadioButton(){
-                var bySchedRadioButton = $get('<%=rbBySched.ClientID%>');
+        function GetMarkedSchedulingRadioButton() {
+            var bySchedRadioButton = $get('<%=rbBySched.ClientID%>');
                 var nowRadioButton = $get('<%=rbNow.ClientID%>');
                 var noneRadioButton = $get('<%=rbNone.ClientID%>');
 
-                if (bySchedRadioButton.checked) {
-                    return bySchedRadioButton;
-                }
-
-                if (nowRadioButton.checked) {
-                    return nowRadioButton;
-                }
-
-                return noneRadioButton;
+            if (bySchedRadioButton.checked) {
+                return bySchedRadioButton;
             }
 
-            function GetMarkedSourceLocationRadioButton(){
-                var localRadioButton = $get('<%=rbLocal.ClientID%>');
-            var sharedRadioButton = $get('<%=rbShared.ClientID%>'); 
-            var sourceControlRadioButton = $get('<%=rbSourceCtrl.ClientID%>'); 
-            var sourcePullingRadioButton = $get('<%=rbPulling.ClientID%>');
+            if (nowRadioButton.checked) {
+                return nowRadioButton;
+            }
+
+            return noneRadioButton;
+        }
+
+        function GetMarkedSourceLocationRadioButton() {
+            var localRadioButton = $get('<%=rbLocal.ClientID%>');
+                var sharedRadioButton = $get('<%=rbShared.ClientID%>');
+                var sourceControlRadioButton = $get('<%=rbSourceCtrl.ClientID%>');
+                var sourcePullingRadioButton = $get('<%=rbPulling.ClientID%>');
 
             if (sharedRadioButton.checked) {
                 return sharedRadioButton;
@@ -957,184 +953,224 @@ function OpenPullingDialog() {
 
         function EnableDetailFrame(i_Enable) {
             var panelExists = ensureDetailsPanelVisible();
-            if(!panelExists) return;
+            if (!panelExists) return;
 
-            if(!i_Enable) {
-                $telerik.$("#<%=rbLocal.ClientID%>").attr("disabled","disabled");
-                    $telerik.$("#<%=rbSourceCtrl.ClientID%>").attr("disabled","disabled");
-                    $telerik.$("#<%=rbShared.ClientID%>").attr("disabled","disabled");
-                    $telerik.$("#<%=rbPulling.ClientID%>").attr("disabled","disabled");                    
-                    
-                    $telerik.$("#<%=rbOsaOriginLocal.ClientID%>").attr("disabled","disabled");
+            if (!i_Enable) {
+                $telerik.$("#<%=rbLocal.ClientID%>").attr("disabled", "disabled");
+                $telerik.$("#<%=rbSourceCtrl.ClientID%>").attr("disabled", "disabled");
+                $telerik.$("#<%=rbShared.ClientID%>").attr("disabled", "disabled");
+                $telerik.$("#<%=rbPulling.ClientID%>").attr("disabled", "disabled");
+
+                $telerik.$("#<%=rbOsaOriginLocal.ClientID%>").attr("disabled", "disabled");
                 $telerik.$("#<%=rbOsaOriginShared.ClientID%>").attr("disabled", "disabled");
-                $telerik.$("#<%=enableOsaResolveDependencies.ClientID%>").attr("disabled","disabled");
+                $telerik.$("#<%=enableOsaResolveDependencies.ClientID%>").attr("disabled", "disabled");
 
-                    disableSchedulingPane(false);
-                
-                    $telerik.$("#<%=txtOSAShared.ClientID%>").attr("disabled","disabled");                    
-                                        
-                    $telerik.$("#<%=txtShared.ClientID%>").attr("disabled","disabled");                    
-                    $telerik.$("#<%=txtLocal.ClientID%>").attr("disabled","disabled");
-                    $telerik.$("#<%=txtSourceCtrl.ClientID%>").attr("disabled","disabled");
-                    $telerik.$("#<%=txtSCUrl.ClientID%>").attr("disabled","disabled");
-                    $telerik.$("#<%=txtPulling.ClientID%>").attr("disabled","disabled");
-                
-                    $find("<%=btnLocal.ClientID%>").set_enabled(false);
-                    $find("<%=btnPulling.ClientID%>").set_enabled(false);
-                    $find("<%=btnShared.ClientID%>").set_enabled(false);
-                    $find("<%=btnOSAShared.ClientID%>").set_enabled(false);
-                    $find("<%=btnSourceCtrl.ClientID%>").set_enabled(false);
-                
-                    $get("imgBeforeScan").src = "Images/Icons/AddRecipientIcon.png";
-                    $get("imgAferScan").src = "Images/Icons/AddRecipientIcon.png";
-                    $get("imgFailedScan").src = "Images/Icons/AddRecipientIcon.png";
-                
-                    $telerik.$("#imgBeforeScan").unbind("click");
-                    $telerik.$("#imgAferScan").unbind("click");
-                    $telerik.$("#imgFailedScan").unbind("click");
-                    var combo = $find("<%= PostScanList.ClientID %>");
-                    combo.disable();  
-                
-                    $find("<%=cmbPreset.ClientID%>").disable();
-                    $find("<%=cmbConfig.ClientID%>").disable();
-                    $find("<%=cmbGroup.ClientID%>").disable();
-                    $find("<%=cmbProjectPolicies.ClientID%>").disable();
-                    try{$find("<%=cmbIssueTracking.ClientID%>").disable();}catch(e){}
-                    try{$find("<%=btnITSopen.ClientID%>").set_enabled(false);}catch(e){}
+                disableSchedulingPane(false);
+
+                $telerik.$("#<%=txtOSAShared.ClientID%>").attr("disabled", "disabled");
+
+                $telerik.$("#<%=txtShared.ClientID%>").attr("disabled", "disabled");
+                $telerik.$("#<%=txtLocal.ClientID%>").attr("disabled", "disabled");
+                $telerik.$("#<%=txtSourceCtrl.ClientID%>").attr("disabled", "disabled");
+                $telerik.$("#<%=txtSCUrl.ClientID%>").attr("disabled", "disabled");
+                $telerik.$("#<%=txtPulling.ClientID%>").attr("disabled", "disabled");
+
+                $find("<%=btnLocal.ClientID%>").set_enabled(false);
+                $find("<%=btnPulling.ClientID%>").set_enabled(false);
+                $find("<%=btnShared.ClientID%>").set_enabled(false);
+                $find("<%=btnOSAShared.ClientID%>").set_enabled(false);
+                $find("<%=btnSourceCtrl.ClientID%>").set_enabled(false);
+
+                $get("imgBeforeScan").src = "Images/Icons/AddRecipientIcon.png";
+                $get("imgAferScan").src = "Images/Icons/AddRecipientIcon.png";
+                $get("imgFailedScan").src = "Images/Icons/AddRecipientIcon.png";
+
+                $telerik.$("#imgBeforeScan").unbind("click");
+                $telerik.$("#imgAferScan").unbind("click");
+                $telerik.$("#imgFailedScan").unbind("click");
+                var combo = $find("<%= PostScanList.ClientID %>");
+                combo.disable();
+
+                $find("<%=cmbPreset.ClientID%>").disable();
+                $find("<%=cmbConfig.ClientID%>").disable();
+                $find("<%=cmbGroup.ClientID%>").disable();
+                $find("<%=cmbProjectPolicies.ClientID%>").disable();
+                try { $find("<%=cmbIssueTracking.ClientID%>").disable(); } catch (e) { }
+                try { $find("<%=btnITSopen.ClientID%>").set_enabled(false); } catch (e) { }
 
                 $(".customFieldValue").prop('disabled', true);
                 $('#<%=inputScansToKeep.ClientID%>').prop('disabled', true);
-                
-                } else {
-                    $telerik.$("#<%=rbLocal.ClientID%>").removeAttr("disabled");
-                    $telerik.$("#<%=rbSourceCtrl.ClientID%>").removeAttr("disabled");
-                    $telerik.$("#<%=rbShared.ClientID%>").removeAttr("disabled");
-                    $telerik.$("#<%=rbPulling.ClientID%>").removeAttr("disabled");
 
-                    $telerik.$("#<%=rbOsaOriginLocal.ClientID%>").removeAttr("disabled");
-                    $telerik.$("#<%=rbOsaOriginShared.ClientID%>").removeAttr("disabled");
-                    $telerik.$("#<%=enableOsaResolveDependencies.ClientID%>").removeAttr("disabled","disabled");
-                    enableSchedulingPane();                                                                         
+            } else {
+                $telerik.$("#<%=rbLocal.ClientID%>").removeAttr("disabled");
+                $telerik.$("#<%=rbSourceCtrl.ClientID%>").removeAttr("disabled");
+                $telerik.$("#<%=rbShared.ClientID%>").removeAttr("disabled");
+                $telerik.$("#<%=rbPulling.ClientID%>").removeAttr("disabled");
 
-                    setOSASharedButtonEnabled();
+                $telerik.$("#<%=rbOsaOriginLocal.ClientID%>").removeAttr("disabled");
+                $telerik.$("#<%=rbOsaOriginShared.ClientID%>").removeAttr("disabled");
+                $telerik.$("#<%=enableOsaResolveDependencies.ClientID%>").removeAttr("disabled", "disabled");
 
-                    $telerik.$("#<%=txtOSAShared.ClientID%>").removeAttr("disabled");
-                    
-                    $telerik.$("#<%=txtLocal.ClientID%>").removeAttr("disabled");
-                    $telerik.$("#<%=txtShared.ClientID%>").removeAttr("disabled");
-                    $telerik.$("#<%=txtSourceCtrl.ClientID%>").removeAttr("disabled");
-                    $telerik.$("#<%=txtSCUrl.ClientID%>").removeAttr("disabled");
-                    $telerik.$("#<%=txtPulling.ClientID%>").removeAttr("disabled");
+                enableSchedulingPane();
 
-                    enableSourceLocationButtonsByRadioButtons();
-                    $get("imgBeforeScan").src = "Images/Icons/AddRecipientIcon.png"; 
-                
-                    $telerik.$("#imgBeforeScan").click(function(){OpenEmailDialog(2)});
-                    $telerik.$("#imgAferScan").click(function(){OpenEmailDialog(1)});
-                    $telerik.$("#imgFailedScan").click(function(){OpenEmailDialog(3)});
-                
-                    $get("imgAferScan").src = "Images/Icons/AddRecipientIcon.png";
-                    $get("imgFailedScan").src = "Images/Icons/AddRecipientIcon.png";       
-                    var combo = $find("<%= PostScanList.ClientID %>");
-                    combo.enable();    
-                
-                    $find("<%=cmbPreset.ClientID%>").enable();
-                    $find("<%=cmbConfig.ClientID%>").enable();
-                    $find("<%=cmbGroup.ClientID%>").enable();   
-                    $find("<%=cmbProjectPolicies.ClientID%>").enable();
-                    setIssueTrackingAllowed();
-                    $(".customFieldValue").prop('disabled', false);
-                    $('#<%=inputScansToKeep.ClientID%>').prop('disabled', false);
-                }
-            
-                $get("<%=txtPrjName.ClientID%>").disabled = !i_Enable;
-                $get("<%=txtAfterScanSucceds.ClientID%>").disabled = !i_Enable;
-                $get("<%=txtBeforeStartScan.ClientID%>").disabled = !i_Enable;
-                $get("<%=txtScanFailed.ClientID%>").disabled = !i_Enable;
+                setOSASharedButtonEnabled();
 
-                $find("<%=SourceFilterPatternControl.ClientID%>").set_enabled(i_Enable);
+                $telerik.$("#<%=txtOSAShared.ClientID%>").removeAttr("disabled");
+
+                $telerik.$("#<%=txtLocal.ClientID%>").removeAttr("disabled");
+                $telerik.$("#<%=txtShared.ClientID%>").removeAttr("disabled");
+                $telerik.$("#<%=txtSourceCtrl.ClientID%>").removeAttr("disabled");
+                $telerik.$("#<%=txtSCUrl.ClientID%>").removeAttr("disabled");
+                $telerik.$("#<%=txtPulling.ClientID%>").removeAttr("disabled");
+
+                enableSourceLocationButtonsByRadioButtons();
+                $get("imgBeforeScan").src = "Images/Icons/AddRecipientIcon.png";
+
+                $telerik.$("#imgBeforeScan").click(function () { OpenEmailDialog(2) });
+                $telerik.$("#imgAferScan").click(function () { OpenEmailDialog(1) });
+                $telerik.$("#imgFailedScan").click(function () { OpenEmailDialog(3) });
+
+                $get("imgAferScan").src = "Images/Icons/AddRecipientIcon.png";
+                $get("imgFailedScan").src = "Images/Icons/AddRecipientIcon.png";
+                var combo = $find("<%= PostScanList.ClientID %>");
+                combo.enable();
+
+                $find("<%=cmbPreset.ClientID%>").enable();
+                $find("<%=cmbConfig.ClientID%>").enable();
+                $find("<%=cmbGroup.ClientID%>").enable();
+                $find("<%=cmbProjectPolicies.ClientID%>").enable();
+                setIssueTrackingAllowed();
+                $(".customFieldValue").prop('disabled', false);
+                $('#<%=inputScansToKeep.ClientID%>').prop('disabled', false);
             }
 
-            function setIssueTrackingAllowed() {
-                var isIssueTrackingAllowed = <%= m_IsLicenseSDLCEdition.ToString().ToLower() %>;
-                try { 
+            $get("<%=txtPrjName.ClientID%>").disabled = !i_Enable;
+            $get("<%=txtAfterScanSucceds.ClientID%>").disabled = !i_Enable;
+            $get("<%=txtBeforeStartScan.ClientID%>").disabled = !i_Enable;
+            $get("<%=txtScanFailed.ClientID%>").disabled = !i_Enable;
+
+            $find("<%=SourceFilterPatternControl.ClientID%>").set_enabled(i_Enable);
+        }
+
+        function setIssueTrackingAllowed() {
+            var isIssueTrackingAllowed = <%= m_IsLicenseSDLCEdition.ToString().ToLower() %>;
+                try {
                     if (isIssueTrackingAllowed) {
                         $find('<%=cmbIssueTracking.ClientID%>').enable();
                     } else {
                         $find('<%=cmbIssueTracking.ClientID%>').disable();
                     }
-                } catch(e) {}
-                try { $find('<%=btnITSopen.ClientID%>').set_enabled(isIssueTrackingAllowed); }catch(e){}
-            }
+                } catch (e) { }
+                try { $find('<%=btnITSopen.ClientID%>').set_enabled(isIssueTrackingAllowed); } catch (e) { }
+        }
 
-            function sharedValidation(sender, args) {
-                args.IsValid = !($get("<%=rbShared.ClientID%>").checked && $get("<%=txtShared.ClientID%>").value=="");
-            }
+        function sharedValidation(sender, args) {
+            args.IsValid = !($get("<%=rbShared.ClientID%>").checked && $get("<%=txtShared.ClientID%>").value == "");
+        }
 
-            function osaSharedValidation(sender, args) {
-                args.IsValid = !($get("<%=rbOsaOriginShared.ClientID%>").checked && $get("<%=txtOSAShared.ClientID%>").value=="");
-            }
+        function osaSharedValidation(sender, args) {
+            args.IsValid = !($get("<%=rbOsaOriginShared.ClientID%>").checked && $get("<%=txtOSAShared.ClientID%>").value == "");
+        }
 
-            function sourceCtrlValidation(sender, args) {
-                args.IsValid = !($get("<%=rbSourceCtrl.ClientID%>").checked && $get("<%=txtSourceCtrl.ClientID%>").value=="");
-            }
+        function sourceCtrlValidation(sender, args) {
+            args.IsValid = !($get("<%=rbSourceCtrl.ClientID%>").checked && $get("<%=txtSourceCtrl.ClientID%>").value == "");
+        }
 
-            function pullingValidation(sender, args) {
-                args.IsValid = !($get("<%=rbPulling.ClientID%>").checked && $get("<%=txtPulling.ClientID%>").value=="");
-            }
+        function pullingValidation(sender, args) {
+            args.IsValid = !($get("<%=rbPulling.ClientID%>").checked && $get("<%=txtPulling.ClientID%>").value == "");
+        }
 
-            function ValidateEmails(source, arguments) {
+        function ValidateEmails(source, arguments) {
 
-                arguments.IsValid = CheckEmailsByValue(arguments.Value);
-                source.innerText = EmailsErrorMessage;
-            }
+            arguments.IsValid = CheckEmailsByValue(arguments.Value);
+            source.innerText = EmailsErrorMessage;
+        }
 
-            function CheckEmailsByValue(value) {
-                var flag = true;
-                EmailsErrorMessage = "";
+        function CheckEmailsByValue(value) {
+            var flag = true;
+            EmailsErrorMessage = "";
 
-                if (value == "") {
-                    return true;
-                } else {
-                    emailsArr = value.split(";");
-                    if (emailsArr.length > EmailMaxCount) {
-                        EmailsErrorMessage = EmailMaxCountError;
-                        return false;
-                    }
-                    for (var i = 0; i < emailsArr.length; i++) {
-                        if (emailsArr[i].trim() != "") {
-                            if (!CheckEmail(emailsArr[i].trim())) {
-                                flag = false;
-                                break;
-                            }
+            if (value == "") {
+                return true;
+            } else {
+                emailsArr = value.split(";");
+                if (emailsArr.length > EmailMaxCount) {
+                    EmailsErrorMessage = EmailMaxCountError;
+                    return false;
+                }
+                for (var i = 0; i < emailsArr.length; i++) {
+                    if (emailsArr[i].trim() != "") {
+                        if (!CheckEmail(emailsArr[i].trim())) {
+                            flag = false;
+                            break;
                         }
                     }
                 }
-
-                if (flag)
-                    if (value.length > EmailsMaxLength) {
-                        EmailsErrorMessage = EmailsMaxLengthError;
-                        flag = false;
-                    }
-                return flag;
-            }            
-
-            function fixDisableDisappear(e)
-            {
-                e.updateCssClass();
             }
-        
-            function openITS(sender, args) {
-                var id=$find('<%=cmbIssueTracking.ClientID%>').get_selectedItem().get_value();
-                if(id>''){
-                    var oWnd = radopen('popIssueTrackingSettings.aspx?pid=' + $get('<%=hdnSelectedProject.ClientID%>').value +'&itsid='+id , null);
-                    oWnd.SetSize(750, 330);
-                    oWnd.add_close(function () {});
+
+            if (flag)
+                if (value.length > EmailsMaxLength) {
+                    EmailsErrorMessage = EmailsMaxLengthError;
+                    flag = false;
                 }
+            return flag;
+        }
+
+        function fixDisableDisappear(e) {
+            e.updateCssClass();
+        }
+
+        function openITS(sender, args) {
+            var id = $find('<%=cmbIssueTracking.ClientID%>').get_selectedItem().get_value();
+                if (id > '') {
+                    var oWnd = radopen('popIssueTrackingSettings.aspx?pid=' + $get('<%=hdnSelectedProject.ClientID%>').value + '&itsid=' + id, null);
+                oWnd.SetSize(750, 330);
+                oWnd.add_close(function () { });
             }
+        }
+
+        function publishScanResult(sender) {
+            if (isCurrentProjectUnpublished) {
+                startPublishScanResult(sender);
+            }
+            else {
+                var message = PUBLISH_SCAN_RESULTS_CONFIRMATION;
+                openConfirm(message, null, function () { startPublishScanResult(sender); });
+            }
+        }
+
+        function startPublishScanResult(sender) {
+            var currentProjectId = $get("<%=hdnSelectedProject.ClientID%>").value;
+            var projectSyncStatusLabel = $("#<%= lblPrjPolicySyncStatus.ClientID %>");
+            var lastSyncProjectLabel = $("#<%= lblPrjPolicyLastSync.ClientID %>");
+            changeParamsStatusToInProgress(sender, projectSyncStatusLabel,lastSyncProjectLabel);
+            publishScanResultSave(currentProjectId,sender,projectSyncStatusLabel);
+        }
+
+        var isCurrentProjectUnpublished = false;
+        function getStatusScanResult() {
+            var currentProjectId = $get("<%=hdnSelectedProject.ClientID%>").value;
+            var btnSync = document.getElementById('<%= policySyncId.ClientID %>');
+            var projectSyncStatusLabel = $("#<%= lblPrjPolicySyncStatus.ClientID %>");
+            var lastSyncProjectLabel = $("#<%= lblPrjPolicyLastSync.ClientID %>");
+            publishScanResultGet(currentProjectId,btnSync,projectSyncStatusLabel,lastSyncProjectLabel);
+        }     
+
     </script>
 </asp:Content>
 <asp:Content ID="cnt2" ContentPlaceHolderID="cpmain" runat="Server">
+    <script type="text/javascript">
+        function onRequestStart(sender, args) {
+            requestStart(sender, args);
+
+            if (args.get_eventTarget().indexOf("_GridToolbar") >= 0) {
+                if (toolbarBtn.get_value() != "REFRESH") {
+                    args.set_enableAjax(false);
+                }
+            }
+        }
+    </script>
+
     <telerik:RadAjaxLoadingPanel ID="pnlLoading" runat="server" Skin="Silk">
     </telerik:RadAjaxLoadingPanel>
     <telerik:RadAjaxManager ID="ajaxMngr" runat="server" ClientEvents-OnRequestStart="onRequestStart"
@@ -1169,9 +1205,9 @@ function OpenPullingDialog() {
 
         <div class="box-content" style="min-height: 600px; padding-right: 2px;">
             <CX:CxGrid ID="ProjectsGrid" runat="server" ShowGroupPanel="true" AllowSorting="True"
-                ExportHiddenColumnsList="GOSCANS,Action" 
-                AllowPaging="true" AllowCustomPaging="true" PagerStyle-AlwaysVisible="true" VirtualItemCount="1000" 
-                AllowFilteringByColumn="True" MultiSelectionCheckboxes="true"
+                       ExportHiddenColumnsList="GOSCANS,Action"
+                       AllowPaging="true" AllowCustomPaging="true" PagerStyle-AlwaysVisible="true" VirtualItemCount="1000" 
+                       AllowFilteringByColumn="True" MultiSelectionCheckboxes="true"
                 EnableViewState="true" EnableLinqExpressions="false">
                 <MasterTableView AutoGenerateColumns="false" DataKeyNames="ProjectID" ClientDataKeyNames="ProjectID"
                     GroupLoadMode="Client" ShowHeadersWhenNoRecords="true" EnableNoRecordsTemplate="true"
@@ -1197,7 +1233,7 @@ function OpenPullingDialog() {
                         <telerik:GridBoundColumn DataField="Preset" UniqueName="Preset" SortExpression="Preset">
                         </telerik:GridBoundColumn>
                         <telerik:GridNumericColumn DataField="TotalScans" UniqueName="TotalScans" SortExpression="TotalScans" DataType="System.Int32"
-                            HeaderStyle-Width="80px">
+                                                   HeaderStyle-Width="80px">
                         </telerik:GridNumericColumn>
                         <telerik:GridDateTimeColumn DataField="LastScanned" DataType="System.DateTime" UniqueName="LastScanned"
                             HeaderStyle-Width="120px" SortExpression="LastScanned">
@@ -1239,7 +1275,7 @@ function OpenPullingDialog() {
                         ResizeGridOnColumnResize="False"></Resizing>
                     <Selecting AllowRowSelect="true" />
                     <ClientEvents OnRowSelected="ProjectRowSelected"></ClientEvents>
-                    <ClientEvents OnMasterTableViewCreated="MTVCreated" />                    
+					<ClientEvents OnMasterTableViewCreated="MTVCreated" />                    
                     <ClientEvents OnCommand="GridCommand" />
                 </ClientSettings>
                 <GroupingSettings ShowUnGroupButton="true" />
@@ -1711,6 +1747,22 @@ function OpenPullingDialog() {
                                                     <asp:Literal ID="ltNoScan2" Visible="false" EnableViewState="false" runat="server"></asp:Literal>
                                                 </fieldset>
                                             </td>
+                                            <td class="isProjectPoliciesMngInstalled" style="vertical-align: middle; text-align: center">
+                                                <fieldset dir="ltr" style="min-height: 200px !important; min-width: 250px !important">
+                                                    <legend id="prjPolicySync" enableviewstate="false" runat="server">Management & Orchestration Publisher</legend>
+                                                    <asp:Panel runat="server" ID="divPrjPolicySync" CssClass="policySyncPanelWithScan">
+                                                        <img style="margin-top: 15px;" alt="" id="imgPrjPolicySync" width="37px" height="47px" src="Images/Icons/syncProjectPolicies.png" />
+                                                        <br /><br />
+                                                        <label enableviewstate="false" id="lblPrjPolicySyncStatus" class="policy-sync-status" runat="server" for="txtPrjPolicySyncStatus"></label>
+                                                        <br />
+                                                        <label enableviewstate="false" id="lblPrjPolicyLastSync" class="policy-sync-status" runat="server" for="txtPrjPolicyLastSync"></label>
+                                                        <br /><br />
+                                                        <div>
+                                                            <asp:Button runat="server" ID="policySyncId" Text="Publish" CssClass="policyStaticSync" OnClientClick="return publishScanResult(this);" />       
+                                                        </div>
+                                                    </asp:Panel>
+                                                </fieldset>
+                                            </td>
                                         </tr>
                                     </table>
                                     <div style="margin: 10px auto; text-align: center;">
@@ -1746,7 +1798,7 @@ function OpenPullingDialog() {
                                                 </label>
                                             </td>
                                             <td>
-                                                <telerik:RadComboBox ID="cmbPreset" Skin="Silk" runat="server" Width="350" TabIndex="2" AutoCompleteSeparator=";"
+                                                <telerik:RadComboBox ng-non-bindable ID="cmbPreset" Skin="Silk" runat="server" Width="350" TabIndex="2" AutoCompleteSeparator=";"
                                                     MarkFirstMatch="True" EnableViewState="false">
                                                 </telerik:RadComboBox>
                                             </td>
@@ -1771,6 +1823,24 @@ function OpenPullingDialog() {
                                                 <telerik:RadComboBox ID="cmbGroup" runat="server" Skin="Silk" Width="350" EnableViewState="false"
                                                     TabIndex="4" AutoCompleteSeparator=";" MarkFirstMatch="True">
                                                 </telerik:RadComboBox>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="isProjectPoliciesMngInstalled">
+                                                    <label enableviewstate="false" id="lblProjectPolicies" runat="server" for="cmbProjectPolicies" Style="margin-right:14px;">
+                                                    </label>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="isProjectPoliciesMngInstalled">
+                                                    <telerik:RadComboBox ID="cmbProjectPolicies"  EnableLoadOnDemand="True" runat="server" OnClientLoad="disableRadComboBoxInputField"
+                                                        Skin="Silk" Width="351px" TabIndex="4" CheckBoxes="true" EnableCheckAllItemsCheckBox="false" OnRequestStart="policiesAjaxStart"
+                                                        OnClientItemChecking="setProjectPolicyChecked">
+                                                    </telerik:RadComboBox>
+                                                    <label runat="server" id="lblFailedToLoadPolicies" Style="display:none;margin-left:20px;color:red;"><%= GetTermFromResource("FAILED_TO_LOAD_POLICIES") %> </label>
+                                                    <label runat="server" id="lblFailedToUpdatePolicies" Style="display:none;margin-left:20px;color:red;"><%= GetTermFromResource("FAILED_TO_UPDATE_POLICIES") %> </label>
+                                                </div>
                                             </td>
                                         </tr>
                                     </table>
@@ -1866,6 +1936,13 @@ function OpenPullingDialog() {
                                                             </asp:CustomValidator>
                                                         </td>
                                                     </tr>
+                                                    <tr>
+                                                        <td >
+                                                            <div style="position: absolute;">
+                                                                <asp:Label ID="lblBranchName" Visible="false" Text="" runat="server"></asp:Label>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
                                                 </table>
                                             </td>
                                         </tr>
@@ -1899,7 +1976,7 @@ function OpenPullingDialog() {
                                         </tr>
                                     </table>
                                 </div>
-                                <div style="display: inline-block; padding: 20px; vertical-align: top; margin-top: 5px;">
+                                <div ng-non-bindable style="display: inline-block; padding: 20px; vertical-align: top; margin-top: 5px;">
                                     <CX:SourceFilterPatternControl runat="server" ID="SourceFilterPatternControl" />
                                 </div>
                             </div>
@@ -2102,7 +2179,7 @@ function OpenPullingDialog() {
                                             <td>
                                                 <label enableviewstate="false" id="Commands" runat="server" for="PostScanList" />
                                                 <br />
-                                                <telerik:RadComboBox ID="PostScanList" runat="server" Width="450" Skin="Silk" AutoCompleteSeparator=";"
+                                                <telerik:RadComboBox ng-non-bindable ID="PostScanList" runat="server" Width="450" Skin="Silk" AutoCompleteSeparator=";"
                                                     MarkFirstMatch="True">
                                                 </telerik:RadComboBox>
                                             </td>
@@ -2111,7 +2188,7 @@ function OpenPullingDialog() {
                                             <td>                                                
                                                 <label enableviewstate="false" id="lblIssueTracking" runat="server" class="Grey"></label>
                                                 <br />
-                                                <telerik:RadComboBox ID="cmbIssueTracking" CssClass="marginLeft-2" runat="server" Width="450" Skin="Silk" onclientselectedindexchanged="openITS" />
+                                                <telerik:RadComboBox ng-non-bindable ID="cmbIssueTracking" CssClass="marginLeft-2" runat="server" Width="450" Skin="Silk" onclientselectedindexchanged="openITS" />
                                             </td>
 
                                             <td>
@@ -2133,7 +2210,7 @@ function OpenPullingDialog() {
                                          <div class="customFieldContainer">
                                              <asp:Repeater ID="customFieldRepeater" runat="server">
                                                  <ItemTemplate>
-                                                     <div class="customField">
+                                                     <div ng-non-bindable class="customField">
                                                          <label title='<%# Eval("FieldName").ToString() %>' class="customFieldNameLabel"><%# Eval("FieldName").ToString() %></label>
                                                          <input runat="server" id="customFieldValue" type="text"
                                                              field-id='<%# Eval("FieldId").ToString() %>'
@@ -2168,8 +2245,15 @@ function OpenPullingDialog() {
                          <telerik:RadPageView ID="Step7PageView" runat="server">
                             <div class="DetailsContentContainer" style="min-height: 300px; border-bottom: none;">
                                 <div style="display: inline-block; padding: 20px;" >
-                                    <div runat="server" id="divOSATab">
-                                        <label enableviewstate="false" id="lblOSATitle" runat="server"></label>
+                                    <div runat="server" id="divOSATabSpinner">
+                                        <img id="imgTestConnectionSpinner" alt="" src="images/icons/loader16x16.gif" style="margin-left: 300px; margin-top: 100px; vertical-align: middle;" />
+                                    </div>
+                                    <div runat="server" id="disOSATabEulaNotAccepted" style="display:none; width:600px; text-align:center;font-size:14px;">
+                                        <img alt="" runat="Server" id="imgScans" width="58" height="58" style="margin-top:65px; margin-bottom:15px;" src="app/styles/images/no_license.png" />
+                                        <div><%= GetTermFromResource("OSA_SETTINGS_ACCEPT_EULA") %></div>
+                                    </div>
+                                    <div runat="server" id="divOSATab" style="display:none">
+                                        <label enableviewstate="false" id="lblOSATitle" style="font-weight:bold;" runat="server"></label>
                                         <table cellpadding="2" cellspacing="5" border="0">
                                             <colgroup>
                                                 <col width="20px" />
@@ -2205,7 +2289,7 @@ function OpenPullingDialog() {
                                             </tr>
                                         </table>
                                         
-                                        <label enableviewstate="false" id="lblOsaPreScanTitle" runat="server"></label>
+                                        <label enableviewstate="false" id="lblOsaPreScanTitle" style="font-weight:bold; margin-top: 15px; display:inline-block;" runat="server"></label>
                                         <table cellpadding="2" cellspacing="5" border="0">
                                         <colgroup>
                                             <col width="20px" />
@@ -2217,22 +2301,6 @@ function OpenPullingDialog() {
                                                                  EnableViewState="false" GroupName="osaLocation" OnClick="setOsaSettingsChecked()" ></asp:CheckBox>
                                             </td>
                                         </tr>
-                                        </table>
-                                        <table id="osaProjectPolicies">
-                                            <tr>
-                                                <td>
-                                                    <label enableviewstate="false" id="lblProjectPolicies" runat="server" for="cmbProjectPolicies" Style="margin-right:14px;">
-                                                    </label>
-                                                </td>
-                                                <td>
-                                                    <telerik:RadComboBox ID="cmbProjectPolicies"  EnableLoadOnDemand="True" runat="server" OnClientLoad="disableRadComboBoxInputField"
-                                                        Skin="Silk" Width="350" TabIndex="4" CheckBoxes="true" EnableCheckAllItemsCheckBox="false" OnRequestStart="policiesAjaxStart"
-                                                        OnClientItemChecking="setProjectPolicyChecked">
-                                                    </telerik:RadComboBox>
-                                                    <label runat="server" id="lblFailedToLoadPolicies" Style="display:none;margin-left:20px;color:red;"><%= GetTermFromResource("FAILED_TO_LOAD_POLICIES") %> </label>
-                                                    <label runat="server" id="lblFailedToUpdatePolicies" Style="display:none;margin-left:20px;color:red;"><%= GetTermFromResource("FAILED_TO_UPDATE_POLICIES") %> </label>
-                                                </td>
-                                            </tr>
                                         </table>
                                     </div>
                                      <div runat="server" id="divOSANoLicense"><%= GetTermFromResource("NEW_PROJECT_STEP7_NO_OPEN_SOURCE_ANALYSIS_LICENSE") %> </div>
@@ -2269,20 +2337,20 @@ function OpenPullingDialog() {
             </asp:Panel>
         </div>
     </div>
-    <script src="TableSort.js" type='text/javascript' language='javascript'></script>
 </asp:Content>
+
 <asp:Content ID="cnt3" ContentPlaceHolderID="script" runat="Server">
 
     <script language="javascript" type="text/javascript">
         function DaysValidation(sender, args) {
             if ($get('<%=rbBySched.ClientID%>').checked) {
                 args.IsValid = ($get('<%=cbMo.ClientID%>').checked ||
-                                $get('<%=cbTu.ClientID%>').checked ||
-                                $get('<%=cbWe.ClientID%>').checked ||
-                                $get('<%=cbTh.ClientID%>').checked ||
-                                $get('<%=cbFr.ClientID%>').checked ||
-                                $get('<%=cbSa.ClientID%>').checked ||
-                                $get('<%=cbSu.ClientID%>').checked);
+                    $get('<%=cbTu.ClientID%>').checked ||
+                    $get('<%=cbWe.ClientID%>').checked ||
+                    $get('<%=cbTh.ClientID%>').checked ||
+                    $get('<%=cbFr.ClientID%>').checked ||
+                    $get('<%=cbSa.ClientID%>').checked ||
+                    $get('<%=cbSu.ClientID%>').checked);
             }
         }
 
@@ -2290,11 +2358,11 @@ function OpenPullingDialog() {
             args.IsValid = true;
         }
 
-        function ensureDetailsPanelVisible(){
+        function ensureDetailsPanelVisible() {
             return !$telerik.$('#<%=pnlNoRecord.ClientID%>').is(':visible');
         }
 
-        Sys.Application.add_load(function() { EnableDetailFrame(false) });
+        Sys.Application.add_load(function () { EnableDetailFrame(false) });
 
         Sys.Application.add_load(initAutoComplete);
     </script>

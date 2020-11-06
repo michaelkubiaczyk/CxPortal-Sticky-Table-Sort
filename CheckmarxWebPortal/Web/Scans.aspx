@@ -3,6 +3,7 @@
 <%@ Register TagPrefix="CX" Assembly="CxWebClientApp" Namespace="CxControls" %>
 
 <asp:Content ID="cnt1" ContentPlaceHolderID="head" runat="Server">
+	<script src="TableSort.js" type='text/javascript' language='javascript'></script>
     <%= System.Web.Optimization.Scripts.Render("~/portal/Scripts/lockScan") %>
     <style type="text/css">
         .availableAction{
@@ -17,32 +18,20 @@
         .box-content input[type=checkbox]{
             vertical-align:middle;
         }
-
     </style>
     <script type="text/javascript">
 
         var toolbarBtn = null;
-        var DELETE_SCANS_CONFIRMATION = "<%=this.GetTermFromResourceJSEncoded("DELETE_SCANS_CONFIRMATION")%>";
-        var COMPARE_PROJECTS_CONFIRMATION = "<%=this.GetTermFromResourceJSEncoded("COMPARE_TWO_PROJECTS_CONFIRMATION")%>";
-        var DELETE_SCANS_SUCCESSFULLY = "<%=this.GetTermFromResourceJSEncoded("DELETE_SCANS_SUCCESSFULLY")%>"; 
-        var DELETE_SCANS_PARTLY_SUCCESSFUL = "<%=this.GetTermFromResourceJSEncoded("DELETE_SCANS_PARTLY_SUCCESSFUL")%>";
-        var DELETE_SCANS_DOWNLOAD_FILE = "<%=this.GetTermFromResourceJSEncoded("DELETE_SCANS_DOWNLOAD_FILE")%>";
-        var SELECT_SCANS_2_DELETE = "<%=this.GetTermFromResourceJSEncoded("SELECT_SCANS_2_DELETE")%>";
-        var DELETE_SCANS_DOWNLOAD_TEXT = "<%=this.GetTermFromResourceJSEncoded("DELETE_SCANS_DOWNLOAD_TEXT")%>";
-        var OK = "<%=this.GetTermFromResourceJSEncoded("OK")%>";
-        
+        var DELETE_SCANS_CONFIRMATION = "<%=this.GetTermFromResourceJsEncoded("DELETE_SCANS_CONFIRMATION")%>";
+        var COMPARE_PROJECTS_CONFIRMATION = "<%=this.GetTermFromResourceJsEncoded("COMPARE_TWO_PROJECTS_CONFIRMATION")%>";
+        var DELETE_SCANS_SUCCESSFULLY = "<%=this.GetTermFromResourceJsEncoded("DELETE_SCANS_SUCCESSFULLY")%>";
+        var DELETE_SCANS_PARTLY_SUCCESSFUL = "<%=this.GetTermFromResourceJsEncoded("DELETE_SCANS_PARTLY_SUCCESSFUL")%>";
+        var DELETE_SCANS_DOWNLOAD_FILE = "<%=this.GetTermFromResourceJsEncoded("DELETE_SCANS_DOWNLOAD_FILE")%>";
+        var SELECT_SCANS_2_DELETE = "<%=this.GetTermFromResourceJsEncoded("SELECT_SCANS_2_DELETE")%>";
+        var DELETE_SCANS_DOWNLOAD_TEXT = "<%=this.GetTermFromResourceJsEncoded("DELETE_SCANS_DOWNLOAD_TEXT")%>";
+        var OK = "<%=this.GetTermFromResourceJsEncoded("OK")%>";
+
         var oldCmmts = "";
-
-        function onRequestStart(sender, args) {
-
-            requestStart(sender, args);
-
-            if (args.get_eventTarget().indexOf("_GridToolbar") >= 0) {
-                if (toolbarBtn.get_value() != "REFRESH") {
-                    args.set_enableAjax(false);
-                }
-            }
-        }
 
         function onClientButtonClicking(sender, args) {
             toolbarBtn = args.get_item();
@@ -55,7 +44,7 @@
             }
         }
 
-        function compareScans(e, isConfirmed) {            
+        function compareScans(e, isConfirmed) {
             var grid = $find("<%=ScansGrid.ClientID %>");
             var scansIDs = new Array();
             var items = grid.get_seletedCheckboxItems();
@@ -63,11 +52,11 @@
             for (var i = 0; i < items.length; i++) {
                 var scanid = items[i].getDataKeyValue("ScanID");
                 var projectid = items[i].getDataKeyValue("ProjectID");
-                scansIDs.push({scanId: scanid, projectId: projectid});
+                scansIDs.push({ scanId: scanid, projectId: projectid });
             }
 
             if (scansIDs.length != 2) {
-                openInfo("<%=this.GetTermFromResourceJSEncoded("SELECT_TWO_SCANS_2_COMPARE")%>", e)
+                openInfo("<%=this.GetTermFromResourceJsEncoded("SELECT_TWO_SCANS_2_COMPARE")%>", e)
             }
             else {
                 if (!isConfirmed && scansIDs[0].projectId != scansIDs[1].projectId) {
@@ -85,101 +74,101 @@
             }
         }
 
-function deleteScans(isConfirmed, flags) {
-    var scanIDs = new Array();
-    var items = $find('<%=ScansGrid.ClientID%>').get_seletedCheckboxItems();
-        for (var i = 0; i < items.length; i++) {
-            var id = items[i].getDataKeyValue("ScanID");
-            scanIDs.push(id);
-        }
-
-        if (scanIDs.length == 0) {
-            openInfo(SELECT_SCANS_2_DELETE);
-            return;
-        } else if (!isConfirmed) {
-            var message = String.format(DELETE_SCANS_CONFIRMATION, scanIDs.length);
-            openConfirm(message, null, function () { deleteScans(true, flags); });
-            return;
-        }
-
-        flags = flags || '<%=CxWebClientApp.CxWebServices.DeleteFlags.None %>';
-
-    $telerik.$.ajax({
-        type: 'POST',
-        async: false,
-        url: 'Scans.aspx/DeleteScans',
-        data: '{\'scanIdsToDelete\':' + JSON.stringify(scanIDs) +
-              ',\'flags\':\'' + flags + '\'}',
-        contentType: 'application/json; charset=utf-8',
-        dataType: 'json',
-        success: function (response) {
-            if (response.d == null) {
-                top.location.href = 'Login.aspx?logout=true';
-            } else if (response.d.IsSuccessful) {
-                $find('<%=ScansGrid.ClientID%>').get_masterTableView().rebind();
-            } else if (response.d.UndeletedScans != null && response.d.UndeletedScans.length > 0) {
-                $find('<%=ScansGrid.ClientID%>').get_masterTableView().rebind();
-                var title = DELETE_SCANS_PARTLY_SUCCESSFUL.replace('{0}', response.d.NumOfDeletedScans).replace('{1}', response.d.NumOfDeletedScans + response.d.UndeletedScans.length);
-                showDeleteObjectsPopup(response.d.UndeletedScans, response.d.NumOfDeletedScans, title, DELETE_SCANS_DOWNLOAD_TEXT, OK, DELETE_SCANS_DOWNLOAD_FILE, true);
+        function deleteScans(isConfirmed, flags) {
+            var scanIDs = new Array();
+            var items = $find('<%=ScansGrid.ClientID%>').get_seletedCheckboxItems();
+            for (var i = 0; i < items.length; i++) {
+                var id = items[i].getDataKeyValue("ScanID");
+                scanIDs.push(id);
             }
-            else if (response.d.IsConfirmation) {
-                openConfirm(response.d.ErrorMessage, null, function () { deleteScans(true, response.d.Flags); });
-            } else {
-                openInfo(response.d.ErrorMessage, null);
+
+            if (scanIDs.length == 0) {
+                openInfo(SELECT_SCANS_2_DELETE);
+                return;
+            } else if (!isConfirmed) {
+                var message = String.format(DELETE_SCANS_CONFIRMATION, scanIDs.length);
+                openConfirm(message, null, function () { deleteScans(true, flags); });
+                return;
             }
+
+            flags = flags || '<%=CxWebClientApp.CxWebServices.DeleteFlags.None %>';
+
+        $telerik.$.ajax({
+            type: 'POST',
+            async: false,
+            url: 'Scans.aspx/DeleteScans',
+            data: '{\'scanIdsToDelete\':' + JSON.stringify(scanIDs) +
+            ',\'flags\':\'' + flags + '\'}',
+            contentType: 'application/json; charset=utf-8',
+            dataType: 'json',
+            success: function (response) {
+                if (response.d == null) {
+                    top.location.href = 'Logout.aspx';
+                } else if (response.d.IsSuccessful) {
+                    $find('<%=ScansGrid.ClientID%>').get_masterTableView().rebind();
+                } else if (response.d.UndeletedScans != null && response.d.UndeletedScans.length > 0) {
+                    $find('<%=ScansGrid.ClientID%>').get_masterTableView().rebind();
+                    var title = DELETE_SCANS_PARTLY_SUCCESSFUL.replace('{0}', response.d.NumOfDeletedScans).replace('{1}', response.d.NumOfDeletedScans + response.d.UndeletedScans.length);
+                    showDeleteObjectsPopup(response.d.UndeletedScans, response.d.NumOfDeletedScans, title, DELETE_SCANS_DOWNLOAD_TEXT, OK, DELETE_SCANS_DOWNLOAD_FILE, true);
+                }
+                else if (response.d.IsConfirmation) {
+                    openConfirm(response.d.ErrorMessage, null, function () { deleteScans(true, response.d.Flags); });
+                } else {
+                    openInfo(response.d.ErrorMessage, null);
+                }
+            }
+        });
         }
-    });
-}
 
-function ScanRowSelected(sender, eventArg) {
-    var selectedScan = eventArg.getDataKeyValue("ScanID");
-    $get("<%=hdnSelectedScan.ClientID%>").value = selectedScan;
-    $telerik.$("#<%=btnScanDetail.ClientID%>").trigger('click');
-}
+        function ScanRowSelected(sender, eventArg) {
+            var selectedScan = eventArg.getDataKeyValue("ScanID");
+            $get("<%=hdnSelectedScan.ClientID%>").value = selectedScan;
+            $telerik.$("#<%=btnScanDetail.ClientID%>").trigger('click');
+        }
 
-function updateCmmts(button, args) {
-    if ($get("<%=hdnSelectedScan.ClientID%>").value > "") {
-        if (button.get_text() == "<%=this.GetTermFromResourceJSEncoded("EDIT")%>") {
-            button.set_text("<%=this.GetTermFromResourceJSEncoded("UPDATE")%>");
+        function updateCmmts(button, args) {
+            if ($get("<%=hdnSelectedScan.ClientID%>").value > "") {
+                if (button.get_text() == "<%=this.GetTermFromResourceJsEncoded("EDIT")%>") {
+                    button.set_text("<%=this.GetTermFromResourceJsEncoded("UPDATE")%>");
             button.set_autoPostBack(false);
             $telerik.$("#<%=txtCmmts.ClientID%>").removeAttr("disabled");
             $get("<%=txtCmmts.ClientID%>").focus();
             oldCmmts = $get("<%=txtCmmts.ClientID%>").value;
             $telerik.$("#<%=btnCancel.ClientID%>").show();
+                }
+                else {
+                    button.set_autoPostBack(true);
+                }
+            }
+            else {
+                button.set_autoPostBack(false);
+            }
         }
-        else {
-            button.set_autoPostBack(true);
+
+        function cancelCmmts(button, args) {
+            $find("<%=btnUpdate.ClientID%>").set_text("<%=this.GetTermFromResourceJsEncoded("EDIT")%>");
+            $telerik.$("#<%=txtCmmts.ClientID%>").attr("disabled", "disabled");
+            $get("<%=txtCmmts.ClientID%>").value = oldCmmts;
+        $telerik.$("#<%=btnCancel.ClientID%>").hide();
         }
-    }
-    else {
-        button.set_autoPostBack(false);
-    }
-}
 
-function cancelCmmts(button, args) {
-    $find("<%=btnUpdate.ClientID%>").set_text("<%=this.GetTermFromResourceJSEncoded("EDIT")%>");
-    $telerik.$("#<%=txtCmmts.ClientID%>").attr("disabled", "disabled");
-    $get("<%=txtCmmts.ClientID%>").value = oldCmmts;
-    $telerik.$("#<%=btnCancel.ClientID%>").hide();
-}
+        function ConfirmWindow(i_Msg, i_Event) {
+            var e = $telerik.$.event.fix(i_Event || window.event);
+            openConfirm(i_Msg, i_Event, function () { eval($telerik.$(e.currentTarget ? e.currentTarget : e.srcElement.parentNode).attr('href')); });
+        }
 
-function ConfirmWindow(i_Msg, i_Event) {
-    var e = $telerik.$.event.fix(i_Event || window.event);
-    openConfirm(i_Msg, i_Event, function () { eval($telerik.$(e.currentTarget ? e.currentTarget : e.srcElement.parentNode).attr('href')); });
-}
-
-function openReport(i_Type, i_ScanID, i_ProjectID, i_ProjectName, i_ScanDate) {
-    if (i_Type != "VIEWER") {
-        var win = radopen("GenerateScanReportNew.aspx?scanid=" + i_ScanID + "&projectid=" + i_ProjectID + "&ProjectName=" + encodeURIComponent(i_ProjectName));
-        win.set_visibleTitlebar(false);
-        win.set_modal(true);
-        win.setSize(1000, 720);
-        win.center();
-    }
-    else {
-        window.open("ViewerMain.aspx?scanId=" + i_ScanID + "&ProjectID=" + i_ProjectID);
-    }
-}
+        function openReport(i_Type, i_ScanID, i_ProjectID, i_ProjectName, i_ScanDate) {
+            if (i_Type != "VIEWER") {
+                var win = radopen("GenerateScanReportNew.aspx?scanid=" + i_ScanID + "&projectid=" + i_ProjectID + "&ProjectName=" + encodeURIComponent(i_ProjectName));
+                win.set_visibleTitlebar(false);
+                win.set_modal(true);
+                win.setSize(1000, 720);
+                win.center();
+            }
+            else {
+                window.open("ViewerMain.aspx?scanId=" + i_ScanID + "&ProjectID=" + i_ProjectID);
+            }
+        }
 
         function openSummery(i_ScanID, i_ProjectName, i_ProjectID, ScanCompletedStatus) {
             var oWnd = radopen("popScanSummery.aspx?ProjectId=" + i_ProjectID + "&ScanID=" + i_ScanID + "&ProjectName=" + "&rnd=" + Math.random());
@@ -187,32 +176,45 @@ function openReport(i_Type, i_ScanID, i_ProjectID, i_ProjectName, i_ScanDate) {
             if (ScanCompletedStatus == 2)
                 height += 40;
             oWnd.setSize(1160, height);
-    oWnd.center();
-}
-
-function filterScanScopeSelectedIndexChanged(sender, args) {
-    try {
-        var tableView = $find('<%=ScansGrid.ClientID %>').get_masterTableView();
-        if (args.get_item().get_value() == "") {
-            tableView.filter("ScanScope", "", "NoFilter");
-        } else {
-            tableView.filter("ScanScope", args.get_item().get_value(), "EqualTo");
+            oWnd.center();
         }
-    }
-    catch (e) {
-    }
-}
 
-		function refresh() {
+        function filterScanScopeSelectedIndexChanged(sender, args) {
+            try {
+                var tableView = $find('<%=ScansGrid.ClientID %>').get_masterTableView();
+                if (args.get_item().get_value() == "") {
+                    tableView.filter("ScanScope", "", "NoFilter");
+                } else {
+                    tableView.filter("ScanScope", args.get_item().get_value(), "EqualTo");
+                }
+            }
+            catch (e) {
+            }
+        }
+
+        function refresh() {
             $find("ctl00_cpmain_ScansGrid").MasterTableView.rebind();
         }
     </script>
 
 </asp:Content>
 <asp:Content ID="cnt2" ContentPlaceHolderID="cpmain" runat="Server">
+    <script type="text/javascript">
+        function onRequestStart(sender, args) {
+            requestStart(sender, args);
+
+            if (args.get_eventTarget().indexOf("_GridToolbar") >= 0) {
+                if (toolbarBtn.get_value() != "REFRESH") {
+                    args.set_enableAjax(false);
+                }
+            }
+        }
+    </script>
+
     <telerik:RadAjaxLoadingPanel ID="pnlLoading" runat="server" Skin="Silk">
     </telerik:RadAjaxLoadingPanel>
-    <telerik:RadAjaxManager ID="ajaxMngr" runat="server" ClientEvents-OnRequestStart="onRequestStart" DefaultLoadingPanelID="pnlLoading">
+    <telerik:RadAjaxManager ID="ajaxMngr" runat="server" ClientEvents-OnRequestStart="onRequestStart"
+        DefaultLoadingPanelID="pnlLoading">
         <AjaxSettings>
             <telerik:AjaxSetting AjaxControlID="ScansGrid">
                 <UpdatedControls>
@@ -237,8 +239,8 @@ function filterScanScopeSelectedIndexChanged(sender, args) {
         <div class="box-content" style="min-height: 600px; padding-right: 2px;">
             <CX:CxGrid ID="ScansGrid" runat="server" ShowGroupPanel="true" AllowSorting="True"
                 ExportHiddenColumnsList="Action,ScanLogs" MultiSelectionCheckboxes="true"
-                AllowPaging="true" AllowCustomPaging="true" PagerStyle-AlwaysVisible="true" VirtualItemCount="1000"
-                AllowFilteringByColumn="True" EnableViewState="true" EnableLinqExpressions="false"				>
+                       AllowPaging="true" AllowCustomPaging="true" PagerStyle-AlwaysVisible="true" VirtualItemCount="1000"
+                       AllowFilteringByColumn="True" EnableViewState="true" EnableLinqExpressions="false"				>
                 <MasterTableView AutoGenerateColumns="false" DataKeyNames="ScanID, ProjectID" ClientDataKeyNames="ScanID, ProjectID, IsLocked"
                     GroupLoadMode="Client" ShowHeadersWhenNoRecords="true" EnableNoRecordsTemplate="true"
                     AllowAutomaticInserts="false">
@@ -253,26 +255,41 @@ function filterScanScopeSelectedIndexChanged(sender, args) {
                                 </telerik:RadComboBox>
                             </FilterTemplate>
                             <ItemTemplate>
-                                <img alt="inc" src="Images/Icons/<%#CxScansScreenDataHelper.GetScanScopeIcon((ScanScope)DataBinder.Eval(Container.DataItem, "ScanScope"))%>" 
-                                    class="scan-state-icon"/>
+                                <img alt="inc" src="Images/Icons/<%#CxScansScreenDataHelper.GetScanScopeIcon((ScanScope)DataBinder.Eval(Container.DataItem, "ScanScope"))%>"
+                                    class="scan-state-icon" />
                             </ItemTemplate>
                         </telerik:GridTemplateColumn>
-                            
+                        <telerik:GridTemplateColumn HeaderStyle-Width="35" DataField="ScanCompletedStatus" UniqueName="ScanCompletedStatus"
+                            HeaderText="--" SortExpression="ScanCompletedStatus" HeaderStyle-CssClass="partialHeader" DataType="System.Boolean"
+                            AllowFiltering="true" AutoPostBackOnFilter="true" CurrentFilterFunction="EqualTo">
+                            <HeaderTemplate>
+                            </HeaderTemplate>
+                            <ItemTemplate>
+                                <img alt="inc" title="<%#(string)DataBinder.Eval(Container.DataItem, "PartialScanAboartedMessage")%>"
+                                    src="Images/Icons/<%#CxScansScreenDataHelper.GetScanCompletedIcon((ScanCompletedStatus)DataBinder.Eval(Container.DataItem, "ScanCompletedStatus"))%>"
+                                    class="scan-state-icon" />
+                            </ItemTemplate>
+                        </telerik:GridTemplateColumn>
                         <telerik:GridDateTimeColumn DataField="ScanDate" UniqueName="ScanDate" SortExpression="ScanDate"
                             AllowFiltering="true" DataType="System.DateTime" AutoPostBackOnFilter="true"
                             CurrentFilterFunction="GreaterThanOrEqualTo">
                         </telerik:GridDateTimeColumn>
-                      
+
                         <telerik:GridDateTimeColumn DataField="ScanFinishDate" UniqueName="ScanFinishDate"
                             SortExpression="ScanFinishDate" DataType="System.DateTime" CurrentFilterFunction="LessThanOrEqualTo">
                         </telerik:GridDateTimeColumn>
-                         <telerik:GridTemplateColumn DataField="ProjectName" UniqueName="ProjectName" SortExpression="ProjectName" 
-                              AllowFiltering="true" AutoPostBackOnFilter="true" CurrentFilterFunction="Contains">
-                                 <ItemTemplate><%#CxPortalHttpSanitizer.Instance.SanitizeResponseSplitting(DataBinder.Eval(Container.DataItem, "ProjectName").ToString())%></ItemTemplate>
-                               </telerik:GridTemplateColumn>
-                        <telerik:GridBoundColumn DataField="InitiatorName" UniqueName="InitiatorName" SortExpression="InitiatorName"
+                        <telerik:GridTemplateColumn DataField="ProjectName" UniqueName="ProjectName" SortExpression="ProjectName"
                             AllowFiltering="true" AutoPostBackOnFilter="true" CurrentFilterFunction="Contains">
-                        </telerik:GridBoundColumn>
+                            <ItemTemplate><%#CxPortalHttpSanitizer.Instance.SanitizeResponseSplitting(DataBinder.Eval(Container.DataItem, "ProjectName").ToString())%></ItemTemplate>
+                        </telerik:GridTemplateColumn>
+                        <telerik:GridTemplateColumn DataField="InitiatorName" UniqueName="InitiatorName" SortExpression="InitiatorName"
+                            AllowFiltering="true" AutoPostBackOnFilter="true" CurrentFilterFunction="Contains">
+                            <ItemTemplate>
+                                <code ng-non-bindable>
+                                    <%#this.EncodeCurrentField(DataBinder.Eval(Container.DataItem, "InitiatorName").ToString())%>
+                                </code>
+                            </ItemTemplate>
+                        </telerik:GridTemplateColumn>
                         <telerik:GridBoundColumn DataField="Origin" UniqueName="Origin" SortExpression="Origin"
                             AllowFiltering="true" AutoPostBackOnFilter="true" CurrentFilterFunction="Contains">
                         </telerik:GridBoundColumn>
@@ -288,28 +305,36 @@ function filterScanScopeSelectedIndexChanged(sender, args) {
                         </telerik:GridTemplateColumn>
                         <telerik:GridBoundColumn DataField="LOC" UniqueName="LOC"
                             SortExpression="LOC" AllowFiltering="true" AutoPostBackOnFilter="true"
-                            CurrentFilterFunction="EqualTo" DataType="System.Int32">
+                                                 CurrentFilterFunction="EqualTo" DataType="System.Int32">
                         </telerik:GridBoundColumn>
-                          <telerik:GridBoundColumn DataField="SuccessRate" UniqueName="SuccessRate"
+                        <telerik:GridBoundColumn DataField="SuccessRate" UniqueName="SuccessRate"
                             SortExpression="SuccessRate" AllowFiltering="true" AutoPostBackOnFilter="true"
-                            CurrentFilterFunction="EqualTo" DataType="System.Int32">
+                                                 CurrentFilterFunction="EqualTo" DataType="System.Int32">
                         </telerik:GridBoundColumn>
                         <telerik:GridBoundColumn DataField="TeamName" UniqueName="TeamName"
                             SortExpression="TeamName" AllowFiltering="true" AutoPostBackOnFilter="true"
                             CurrentFilterFunction="Contains">
                         </telerik:GridBoundColumn>
-                        <telerik:GridBoundColumn DataField="ServerName" UniqueName="ServerName" SortExpression="ServerName"
+                        <telerik:GridTemplateColumn DataField="ServerName" UniqueName="ServerName" SortExpression="ServerName"
+                            AllowFiltering="true" AutoPostBackOnFilter="true" CurrentFilterFunction="Contains">
+                            <ItemTemplate>
+                                <code ng-non-bindable>
+                                    <%#this.EncodeCurrentField(DataBinder.Eval(Container.DataItem, "ServerName").ToString())%>
+                                </code>
+                            </ItemTemplate>
+                        </telerik:GridTemplateColumn>
+                        <telerik:GridBoundColumn DataField="CxVersion" UniqueName="CxVersion" SortExpression="CxVersion"
                             AllowFiltering="true" AutoPostBackOnFilter="true" CurrentFilterFunction="Contains">
                         </telerik:GridBoundColumn>
-                         <telerik:GridBoundColumn DataField="CxVersion" UniqueName="CxVersion" SortExpression="CxVersion"
-                            AllowFiltering="true" AutoPostBackOnFilter="true" CurrentFilterFunction="Contains">
-                        </telerik:GridBoundColumn>
-                        <telerik:GridBoundColumn DataField="Comments" UniqueName="Comments" HtmlEncode="true"
-                            SortExpression="Comments" AllowFiltering="true" AutoPostBackOnFilter="true"
-                            CurrentFilterFunction="Contains">
-                        </telerik:GridBoundColumn>
-                        <telerik:GridTemplateColumn UniqueName="Access" SortExpression="Access" DataField="Access" DataType="System.Boolean" 
-                            AllowFiltering="true" AutoPostBackOnFilter="true" CurrentFilterFunction="EqualTo">
+                        <telerik:GridTemplateColumn DataField="Comments" UniqueName="Comments" SortExpression="Comments" AllowFiltering="true" AutoPostBackOnFilter="true" CurrentFilterFunction="Contains">
+                            <ItemTemplate>
+                                <code ng-non-bindable>
+                                    <%#this.EncodeCurrentField(DataBinder.Eval(Container.DataItem, "Comments").ToString())%>
+                                </code>
+                            </ItemTemplate>
+                        </telerik:GridTemplateColumn>
+                        <telerik:GridTemplateColumn UniqueName="Access" SortExpression="Access" DataField="Access" DataType="System.Boolean"
+                                                    AllowFiltering="true" AutoPostBackOnFilter="true" CurrentFilterFunction="EqualTo">
                             <ItemTemplate>
                                 <asp:Label runat="server" Text='<%# Convert.ToString(Eval("Access")) == "PUBLIC" ? GetTermFromResource("PUBLIC") : GetTermFromResource("PRIVATE") %>'></asp:Label>
                             </ItemTemplate>
@@ -323,9 +348,9 @@ function filterScanScopeSelectedIndexChanged(sender, args) {
                         <telerik:GridTemplateColumn UniqueName="Action" Groupable="False" AllowFiltering="false">
                             <ItemTemplate>
                                 <div style="vertical-align: middle; cursor: pointer;">
-                                    <img id="imgViewer" style="margin-bottom:-2px;" runat="server" enableviewstate="false" alt="" src="images/ico/Search.png" />&nbsp;
-                                    <img id="imgReports" style="margin-bottom:-2px;" runat="server" enableviewstate="false" alt="" src="images/icons/reports16x16.png" />&nbsp;
-                                    <img id="imgSummery" runat="server" enableviewstate="false" alt="" src="images/ico/form-submit.png" />&nbsp;
+                                    <img id="imgViewer" Visible='<%# PortalUser.IsAllowedToViewResults %>' style="margin-bottom: -2px;" runat="server" enableviewstate="false" alt="" src="images/ico/Search.png" />&nbsp;
+                                    <img id="imgReports" Visible='<%# PortalUser.IsAllowedToGenerateScanReport %>' style="margin-bottom: -2px;" runat="server" enableviewstate="false" alt="" src="images/icons/reports16x16.png" />&nbsp;
+                                    <img id="imgSummery" Visible='<%# PortalUser.IsAllowedToViewResults %>' runat="server" enableviewstate="false" alt="" src="images/ico/form-submit.png" />&nbsp;
                                     <img runat="server" Visible='<%# PortalUser.IsAllowedToDeleteScan %>' src="images/icons/unlocked.png" title='<%# GetTermFromResource("LOCK_SCAN") %>' class='<%# Convert.ToString(Eval("Access")) == "PUBLIC" && Convert.ToBoolean(Eval("IsLocked")) == false ? "availableAction" : "unavailableAction" %>' onclick='<%# ("lockScan(" + Eval("ScanID") + ", refresh)") %>' />
                                     <img runat="server" Visible='<%# PortalUser.IsAllowedToDeleteScan %>' src="images/icons/locked.png" title='<%# GetTermFromResource("UNLOCK_SCAN") %>' class='<%# Convert.ToString(Eval("Access")) == "PUBLIC" && Convert.ToBoolean(Eval("IsLocked")) == true ? "availableAction" : "unavailableAction" %>' onclick='<%# ("unlockScan(" + Eval("ScanID") + ", refresh)") %>' />
                                 </div>
@@ -335,7 +360,7 @@ function filterScanScopeSelectedIndexChanged(sender, args) {
                         <telerik:GridTemplateColumn HeaderStyle-Width="35" AllowFiltering="false" UniqueName="ScanLogs" Groupable="False">
                             <ItemStyle VerticalAlign="Middle" HorizontalAlign="Center" />
                             <ItemTemplate>
-                                <CX:CxLogsDownloadButton ID="lbScanLogs" runat="server" StreamLogData-ScanType="Finished" Visible='<%# (this.Page as CxPortalPage).PortalUser.IsScanner %>' StreamLogData-Id='<%# (long)DataBinder.Eval(Container.DataItem, "ScanID") %>' StreamLogData-ProjectName='<%# HttpUtility.UrlEncode(DataBinder.Eval(Container.DataItem, "ProjectName").ToString()) %>' StreamLogData-ScanTime='<%# DataBinder.Eval(Container.DataItem, "ScanFinishDate") %>'>
+                                <CX:CxLogsDownloadButton ID="lbScanLogs" runat="server" StreamLogData-ScanType="Finished" Visible='<%# (this.Page as CxPortalPage).PortalUser.IsAllowed2ManageSystemSettings || (this.Page as CxPortalPage).PortalUser.IsAllowedToDownloadScanLog %>' StreamLogData-Id='<%# (long)DataBinder.Eval(Container.DataItem, "ScanID") %>' StreamLogData-ProjectName='<%# HttpUtility.UrlEncode(DataBinder.Eval(Container.DataItem, "ProjectName").ToString()) %>' StreamLogData-ScanTime='<%# DataBinder.Eval(Container.DataItem, "ScanFinishDate") %>'>
                                 </CX:CxLogsDownloadButton>
                             </ItemTemplate>
                         </telerik:GridTemplateColumn>
@@ -347,7 +372,7 @@ function filterScanScopeSelectedIndexChanged(sender, args) {
                         ResizeGridOnColumnResize="False"></Resizing>
                     <Selecting AllowRowSelect="true" />
                     <ClientEvents OnRowSelected="ScanRowSelected"></ClientEvents>
-                    <ClientEvents OnMasterTableViewCreated="MTVCreated" />                    
+					<ClientEvents OnMasterTableViewCreated="MTVCreated" />                    
                     <ClientEvents OnCommand="GridCommand" />
                 </ClientSettings>
                 <GroupingSettings ShowUnGroupButton="true" />
@@ -373,7 +398,7 @@ function filterScanScopeSelectedIndexChanged(sender, args) {
                     </telerik:RadTabStrip>
                     <telerik:RadMultiPage ID="ScanMultiPage" runat="server" SelectedIndex="0">
                         <telerik:RadPageView ID="MonitorPagev" runat="server">
-                            <div class="DetailsContentContainer" style="background-color:#FDFDFD; height: 305px;">
+                            <div class="DetailsContentContainer" style="background-color: #FDFDFD; height: 305px;">
                                 <div style="padding: 1px 10px 10px 20px">
                                     <table cellpadding="0" cellspacing="0">
                                         <tr>
@@ -748,7 +773,7 @@ function filterScanScopeSelectedIndexChanged(sender, args) {
                             </div>
                         </telerik:RadPageView>
                         <telerik:RadPageView ID="CmmtsPagev" runat="server">
-                            <div class="DetailsContentContainer" style="background-color:#FDFDFD ;height: 230px; min-height: 100px; border-bottom: none;">
+                            <div class="DetailsContentContainer" style="background-color: #FDFDFD; height: 230px; min-height: 100px; border-bottom: none;">
                                 <div style="padding: 20px">
                                     <asp:TextBox ID="txtCmmts" runat="server" Width="605" Height="180" TextMode="MultiLine" />
                                 </div>
@@ -781,7 +806,6 @@ function filterScanScopeSelectedIndexChanged(sender, args) {
             </asp:Panel>
         </div>
     </div>
-    <script src="TableSort.js" type='text/javascript' language='javascript'></script>
 </asp:Content>
 <asp:Content ID="cnt3" ContentPlaceHolderID="script" runat="Server">
 </asp:Content>
