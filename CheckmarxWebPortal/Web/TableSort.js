@@ -14,7 +14,11 @@ var columnSortRegex = /Telerik\.Web\.UI\.Grid\.Sort\(.+\),\s+'(\w+)'\)\;/ ;
 
 
 function MTVCreated( grid, args ) {
+
 	MTV = grid.get_masterTableView();
+	if ( !MTV ) {
+		setTimeout( function() { MTVCreated( grid, args ); }, 100 );
+	}
 
 	currentState.set( "pageSize", MTV.get_pageSize() );
 	currentState.set( "showPage", MTV.get_currentPageIndex()+1 );
@@ -44,7 +48,7 @@ function MTVCreated( grid, args ) {
 		}
 	}
 	
-	//alert( "Current state: " + currentState.toString() + "\nTarget: " + targetState.toString() );
+	alert( "Current state: " + currentState.toString() + "\nTarget: " + targetState.toString() );
 
 	var diffs = 0;
 	for ( var i = 0; i < tableParams.length; i++ ) {
@@ -58,6 +62,9 @@ function MTVCreated( grid, args ) {
 	
 	if ( diffs == 0 && targetReached == 0 ) {
 		targetReached = 1;
+		if ( typeof(Storage) !== "undefined" && sessionStorage.getItem( storedParamName ) != null ) {
+			sessionStorage.removeItem( storedParamName );
+		}
 	}
 	
 
@@ -65,7 +72,7 @@ function MTVCreated( grid, args ) {
 }
 
 function updateTable( param, value ) {
-	//alert( "Need to set param " + param + " to " + value );
+	alert( "Need to set param " + param + " to " + value );
 	switch (param) {
 		case "filter":
 			//alert("Updating Filters:\nFrom: " + getFilterString( currentFilters ) + "\nTo: " + getFilterString( targetFilters ) );
