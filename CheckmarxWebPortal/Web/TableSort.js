@@ -48,7 +48,7 @@ function MTVCreated( grid, args ) {
 		}
 	}
 	
-	alert( "Current state: " + currentState.toString() + "\nTarget: " + targetState.toString() );
+//	alert( "Current state: " + currentState.toString() + "\nTarget: " + targetState.toString() );
 
 	var diffs = 0;
 	for ( var i = 0; i < tableParams.length; i++ ) {
@@ -72,7 +72,7 @@ function MTVCreated( grid, args ) {
 }
 
 function updateTable( param, value ) {
-	alert( "Need to set param " + param + " to " + value );
+//	alert( "Need to set param " + param + " to " + value );
 	switch (param) {
 		case "filter":
 			//alert("Updating Filters:\nFrom: " + getFilterString( currentFilters ) + "\nTo: " + getFilterString( targetFilters ) );
