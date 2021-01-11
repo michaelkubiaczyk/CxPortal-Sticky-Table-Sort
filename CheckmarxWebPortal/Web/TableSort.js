@@ -1,3 +1,11 @@
+/*
+
+    Author: Michael Kubiaczyk @Checkmarx
+    Target version: Checkmarx 9.2
+    Github: https://github.com/michaelkubiaczyk/CxPortal-Sticky-Table-Sort
+
+*/
+
 var storedParamName = "fs_params";
 
 var tableParams = ["filter", "sort", "order", "pageSize", "showPage" ];
@@ -8,7 +16,6 @@ var targetFilters = new Map();
 var targetState = new URLSearchParams("");
 var targetReached = 1;
 var MTV;
-// Telerik.Web.UI.Grid.Sort($find('ctl00_cpmain_ProjectsGrid_ctl00'), 'LastScanned'); return false;__doPostBack('ctl00$cpmain$ProjectsGrid$ctl00$ctl02$ctl02$ctl28','')
 
 var columnSortRegex = /Telerik\.Web\.UI\.Grid\.Sort\(.+\),\s+'(\w+)'\)\;/ ;
 
@@ -24,23 +31,19 @@ function MTVCreated( grid, args ) {
 	currentState.set( "showPage", MTV.get_currentPageIndex()+1 );
 
 	if ( !currentState.has( "sort" ) || currentState.get( "sort" ) == "" ) {
-		//alert( "Checking sorts?" );
 		var sorts = document.getElementsByClassName( "rgHeader rgSorted" );
 		if ( sorts.length > 0 ) {
 			for ( var i = 0; i < sorts[0].childNodes.length; i++ ) {
 				var n = sorts[0].childNodes[i];
 				if ( n.nodeName == 'INPUT' ) {
-					//alert( n.title );
 					if ( n.title.match(/Sorted desc/i) ) 
 						currentState.set( "order", "DESC" );
 					else 
 						currentState.set( "order", "ASC" );
-					
-					//alert( "Checking: " + String(n.onclick) );
+
 					var col = columnSortRegex.exec(String(n.onclick));
 					if ( col !== null ) {
 						currentState.set( "sort", col[1] );
-						//alert( "Currently sorting: " + col[1] );
 					}
 					break;
 				}
@@ -48,8 +51,6 @@ function MTVCreated( grid, args ) {
 		}
 	}
 	
-//	alert( "Current state: " + currentState.toString() + "\nTarget: " + targetState.toString() );
-
 	var diffs = 0;
 	for ( var i = 0; i < tableParams.length; i++ ) {
 		var p = tableParams[i];
@@ -66,19 +67,13 @@ function MTVCreated( grid, args ) {
 			sessionStorage.removeItem( storedParamName );
 		}
 	}
-	
-
-	
 }
 
 function updateTable( param, value ) {
-//	alert( "Need to set param " + param + " to " + value );
+//	Need to set param to value
 	switch (param) {
 		case "filter":
-			//alert("Updating Filters:\nFrom: " + getFilterString( currentFilters ) + "\nTo: " + getFilterString( targetFilters ) );
 			for ( var [key, filter] of targetFilters ) {
-				//alert( "Want to set filter " + key + " to " + filter + "\nCurrently: " + currentFilters.get( key ) );
-				
 				if ( !currentFilters.has( key ) || currentFilters.get(key) !== filter ) {					
 					var parameters = filter.split( "|?" );
 					setTimeout( function(){ MTV.showFilterItem(); MTV.filter( parameters[0], parameters[1], parameters[2]); }, 500 );
@@ -99,7 +94,6 @@ function updateTable( param, value ) {
 			MTV._sortExpressions.clear();
 
 			if ( sort == "" ) {
-				//alert ( "trying to sort with empty sort: " + sort + ", " + order );
 				sort = currentState.get( "sort" );
 				order = "";
 			}
@@ -127,7 +121,6 @@ function updateTable( param, value ) {
 }
 
 function GridCommand( grid, args ) {
-	//alert( "Command: " + args.get_commandName() + ", params: " + args.get_commandArgument() );
 	if ( args.get_commandName() == "Sort" ) {
 		var sort = args.get_commandArgument();
 		var res = sort.split(" ");
@@ -159,12 +152,9 @@ function GridCommand( grid, args ) {
 		currentState.set( "showPage", args.get_commandArgument() );
 	} else if ( args.get_commandName() == "Filter" ) {
 		var filter = args.get_commandArgument().split( "|?", 3 );
-		//alert( "Filtering: " + filter[0] + ", " + filter[1] + ", " + filter[2] );
-		if ( filter[1] == "" ) { // want to unfilter this column
-			//currentState.delete( "filter" );
+		if ( filter[1] == "" ) { 
 			currentFilters.delete( filter[0] );
 		} else {
-			//currentState.set( "filter", args.get_commandArgument() );
 			currentFilters.set( filter[0], args.get_commandArgument() );			
 			currentState.set( "filter", getFilterString( currentFilters ) );
 		}
@@ -209,25 +199,17 @@ function sanitize( str ) {
 function onPageLoad() { 
 	// If the page is loaded with a hash present, save that hash
 	// If the page loads without a hash present, but there's one saved, load the saved one
-//	alert( "OnLoad" );
 	if (window.location.hash == "" && typeof(Storage) !== "undefined" && sessionStorage.getItem( storedParamName ) != null ) {
 		targetHash = sanitize( sessionStorage.getItem( storedParamName ) );
-//		alert( "Loaded hash: " + targetHash + "\nSanitized: " + sanitize(targetHash) );
 		targetState = new URLSearchParams( targetHash );
 		targetReached = 0;
 		sessionStorage.removeItem( storedParamName );
-//		alert( "Loaded stored URL: " + targetHash );
 	}
 	
 	if (window.location.hash != "" ) {
 		var dec = decodeURIComponent(window.location.hash.substring(1));
 		targetHash = sanitize(dec);
-		//alert( "Window hash: " + window.location.hash.substring(1) + "\ndecoded: " + dec + "\nsanitied: " + targetHash	) 
 		targetState = new URLSearchParams( targetHash );
-		
-		
-		//alert( "Target filters from " + targetState.get("filter") + "\n" + getFilterString( targetFilters ) );		
-		
 		sessionStorage.setItem( storedParamName, targetHash );
 		targetReached = 0;
 	}
